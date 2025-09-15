@@ -5,10 +5,10 @@ from flask import Flask, request, session, redirect, render_template, url_for, j
 from flask_cors import CORS
 
 app = Flask(__name__)
+JSON_FILE = "versions.json"
 app.secret_key = 'segredo_super_seguro'
 CORS(app)
 
-# Conexões ativas
 connections = {}  
 # {conn_id: {'conn': socket, 'addr': (ip, port), 'password': str, 'buffer': str, 'in_use': bool, 'disconnected': bool}}
 
@@ -53,7 +53,6 @@ def handle_client(conn, addr):
                 print(f'[TCP] Marcando conexão {k} como desconectada')
                 v['disconnected'] = True
         conn.close()
-
 def start_tcp_server(host='0.0.0.0', port=4096):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -65,7 +64,13 @@ def start_tcp_server(host='0.0.0.0', port=4096):
         conn, addr = server.accept()
         threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
-# --- Flask endpoints ---
+def load_versions():
+    if os.path.exists(JSON_FILE):
+        with open(JSON_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"downloads": [], "news": []}
+
+
 
 @app.route('/cli/')
 def index():
@@ -136,6 +141,66 @@ def receive_data():
     conn_data['buffer'] = ''
     return jsonify({'output': output})
 
+@app.route("/api/json", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
+def info_json():
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    return jsonify({
+        "address": client_ip,
+        "port": request.environ.get('REMOTE_PORT'),
+        "agent": request.headers.get('User-Agent'),
+        "method": request.method,
+    })
+
+@app.route("/api/ip")
+def ip_only():
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    return Response(client_ip, mimetype='text/plain')
+
+@app.route("/api/ua")
+def user_agent_only():
+    user_agent = request.headers.get('User-Agent')
+    return Response(user_agent, mimetype='text/plain')
+
+@app.route("/api/headers")
+def headers_plaintext():
+    headers = ""
+    for key, value in request.headers.items():
+        headers += f"{key}: {value}\n"
+    return Response(headers, mimetype='text/plain')
+
+# OpenTTY WebSite API
+# |
+@app.route("/api/versions")
+def get_versions():
+    data = load_versions()
+    return jsonify(data)
+# |
+@app.route("/api/versions/downloads")
+def get_downloads():
+    data = load_versions()
+    return jsonify(data.get("downloads", []))
+# |
+@app.route("/api/versions/news")
+def get_news():
+    data = load_versions()
+    return jsonify(data.get("news", []))
+# |
+@app.route("/api/post", methods=["POST"])
+def post():
+    client_ip = request.remote_addr
+    client_port = request.environ.get("REMOTE_PORT")
+
+    body = request.get_data(as_text=True)
+
+    print("=" * 40)
+    print(f"📥 Conexão de: {client_ip}:{client_port}")
+    print(f"📡 Caminho: {request.path}")
+    print(f"📦 Headers: {dict(request.headers)}")
+    print(f"📝 Conteúdo recebido:\n{body}")
+    print("=" * 40)
+
+    return f"POST recebido com sucesso!\nConteudo: {body}\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
+
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
-    app.run(host='0.0.0.0', port=10142, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=10141, debug=True, use_reloader=False)
