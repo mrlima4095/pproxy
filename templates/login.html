@@ -1,91 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>WebProxy</title>
+    <title>Login Proxy</title>
     <style>
-        :root { --bg: #05060a; --panel: #071018; --neon-green: #00ff88; --neon-pink: #ff2d95; --glass: rgba(255,255,255,0.03); --mono: "Courier New", Monaco, monospace; } 
-        html, body { height: 100%; margin: 0; background: linear-gradient(180deg,#02020b 0%, #071020 60%); font-family: var(--mono); color: var(--neon-green); }
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
 
-        .bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: radial-gradient(rgba(0,255,136,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,0,150,0.01) 1px, transparent 1px); background-size: 20px 20px, 150px 150px; animation: drift 20s linear infinite; opacity: 0.85; mix-blend-mode: screen; }
-        @keyframes drift { from { transform:translateY(0) } to { transform:translateY(-60px) } }
+        h1 {
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+        }
 
-        .container { position: relative; z-index: 2; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .card { width: 460px; max-width: 95%; background: linear-gradient(180deg, rgba(10,10,12,0.6), rgba(3,3,6,0.5)); border: 1px solid rgba(0,255,136,0.08); box-shadow: 0 10px 30px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02); padding: 28px; border-radius: 12px; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 14px; }
-        .logo { display: flex; align-items: center; gap: 12px; }
-        .logo .sig { font-size: 18px; letter-spacing: 2px; color: var(--neon-pink); text-shadow: 0 0 12px rgba(255,45,149,0.3); }
-        .logo .sub { font-size: 12px; color: rgba(0,255,136,0.6); }
+        form {
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 15px #0f0;
+            width: 300px;
+        }
 
-        label { display: block; font-size: 12px; color: rgba(0,255,136,0.9); margin-bottom: 6px; }
-        input[type=text], input[type=password] { width: 100%; padding: 12px 14px; border-radius: 6px; background: transparent; border: 1px solid rgba(0,255,136,0.06); color: var(--neon-green); outline: none ; font-family: var(--mono); font-size: 14px; box-shadow: 0 0 18px rgba(0,255,136,0.02) inset; }
-        input::placeholder { color: rgba(0,255,136,0.25); }
+        label {
+            display: block;
+            margin-top: 10px;
+        }
 
-        .row { display: flex; gap: 12px; align-items: center; }
-        button{ cursor: pointer; padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04); background: linear-gradient(90deg, rgba(0,255,136,0.06), rgba(255,45,149,0.03)); color: #051012; font-weight: 700; letter-spacing: 1px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); }
-        .hint{ font-size: 12px; color: rgba(0,255,136,0.35) }
-        .preview{ margin-top: 6px; padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.55); color: var(--neon-green); font-family: var(--mono); font-size: 12px; height: 88px; overflow: auto; border: 1px dashed rgba(0,255,136,0.06) }
+        input {
+            width: 100%;
+            padding: 8px;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-family: monospace;
+        }
 
-        .card:focus-within{ box-shadow: 0 0 40px rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.14) }
-        .meta{ position: absolute; left: 18px; top: 14px; color: rgba(0,255,136,0.18); font-size: 11px; z-index: 3 }
+        button {
+            margin-top: 15px;
+            width: 100%;
+            padding: 10px;
+            background: #0f0;
+            color: #000;
+            font-weight: bold;
+            font-family: monospace;
+            cursor: pointer;
+            border: none;
+        }
+
+        button:hover {
+            background: #0c0;
+        }
     </style>
 </head>
 <body>
-    <div class="bg" aria-hidden="true"></div>
-    <div class="meta">WebProxy 1.0</div>
+    <h1>Conectar ao Proxy</h1>
+    <form action="/cli/login" method="POST">
+        <label>ID da Conexão:</label>
+        <input type="text" name="conn_id" required>
 
-    <div class="container">
-        <div class="card" role="main" aria-labelledby="title">
-            <div class="logo">
-                <div style="width:54px;height:54;border-radius:6px;background:linear-gradient(145deg,#001f13, #00102a);display:flex;align-items:center;justify-content:center;box-shadow: inset 0 1px 0 rgba(255,255,255,0.02)">
-                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" style="filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));">
-                    <path d="M3 12h18" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round"/>
-                    <path d="M7 5l-4 14" stroke="#ff2d95" stroke-width="1.2" stroke-linecap="round"/>
-                    </svg>
-                </div>
-                <div>
-                    <div id="title" class="sig">WEB PROXY</div>
-                    <div class="sub">Reverse connections</div>
-                </div>
-            </div>
+        <label>Senha:</label>
+        <input type="password" name="password" required>
 
-            <form action="/cli/login" method="POST" style="margin-top:6px;">
-                <label for="conn_id">Connection ID</label>
-                <input id="conn_id" name="conn_id" type="text" placeholder="ex: a1b2c3d4" required autocomplete="off">
-
-                <label for="password">Password</label>
-                <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
-
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-                    <div class="hint">Protocol: Proxy → TCP</div>
-                    <div style="display:flex;gap:8px">
-                        <button type="submit">Connect</button>
-                    </div>
-                </div>
-
-                <div class="preview" aria-live="polite">
-                    booting...
-                    <div style="opacity:0.6">> Authenticating remote session... <span style="color:var(--neon-pink)">ok</span></div>
-                    <div style="opacity:0.6">> handshaking encryption... <span style="color:var(--neon-pink)">ok</span></div>
-                    <div style="opacity:0.6">> welcome, @operator</div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        const inputs = document.querySelectorAll('input');
-
-        inputs.forEach(i => { 
-            i.addEventListener('focus', () => { i.style.boxShadow = '0 0 24px rgba(0,255,136,0.06)'; });
-            i.addEventListener('blur', () => { i.style.boxShadow = ''; });
-        });
-
-        document.getElementById('conn_id').addEventListener('input', e=>{
-            const v = e.target.value.trim();
-
-            if (/^[0-9a-f]{8}$/i.test(v)) { document.getElementById('password').focus(); }
-        });
-    </script>
+        <button type="submit">Conectar</button>
+    </form>
 </body>
 </html>

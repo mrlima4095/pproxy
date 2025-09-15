@@ -1,202 +1,88 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Terminal — Proxy</title>
-<style>
-    :root{
-        --bg:#010207;
-        --glass: rgba(255,255,255,0.02);
-        --neon-green:#00ff88;
-        --neon-pink:#ff2d95;
-        --mono: "Courier New", Monaco, monospace;
-    }
-    html,body{height:100%;margin:0;background:radial-gradient(ellipse at top, #061018 0%, #000004 60%);font-family:var(--mono);color:var(--neon-green);}
+    <title>Terminal Proxy</title>
+    <style>
+        body {
+            background: #000;
+            color: #0f0;
+            font-family: monospace;
+            margin: 0;
+            padding: 20px;
+        }
 
-    .wrap{display:flex;flex-direction:column;height:100vh;padding:18px;box-sizing:border-box;gap:12px;}
-    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .brand{display:flex;align-items:center;gap:12px}
-    .brand .logo{
-        width:46px;height:46px;border-radius:6px;background:linear-gradient(180deg,#001218,#00101a);display:flex;align-items:center;justify-content:center;border:1px solid rgba(0,255,136,0.06)
-    }
-    .brand .title{font-weight:700;letter-spacing:2px}
-    .controls{display:flex;gap:8px;align-items:center}
+        h1 {
+            color: #0f0;
+            text-shadow: 0 0 10px #0f0;
+        }
 
-    /* terminal area */
-    #terminal {
-        flex:1;background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(3,3,6,0.45));
-        border-radius:10px;padding:14px;overflow:auto;border:1px solid rgba(0,255,136,0.06);
-        box-shadow: 0 18px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-        font-size:13px;line-height:1.25;white-space:pre-wrap;
-    }
-    .cursor{
-        display:inline-block;width:8px;height:16px;background:var(--neon-green);margin-left:6px;animation:blink 1s steps(2) infinite;
-        vertical-align:middle;border-radius:2px;
-    }
-    @keyframes blink{50%{opacity:0}}
+        #output {
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            padding: 10px;
+            height: 300px;
+            overflow: auto;
+            font-family: monospace;
+            box-shadow: 0 0 15px #0f0;
+        }
 
-    /* input area */
-    .input-row{display:flex;gap:8px;margin-top:8px;align-items:center}
-    #cmd{flex:1;padding:10px 12px;border-radius:8px;background:transparent;border:1px solid rgba(0,255,136,0.06);color:var(--neon-green);font-family:var(--mono); outline:none}
-    button{padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:linear-gradient(90deg, rgba(0,255,136,0.06), rgba(255,45,149,0.03));cursor:pointer}
+        #cmd {
+            width: 80%;
+            padding: 8px;
+            background: #000;
+            border: 1px solid #0f0;
+            color: #0f0;
+            font-family: monospace;
+        }
 
-    /* little status leds */
-    .led{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;box-shadow:0 1px 4px rgba(0,0,0,0.6)}
-    .led.on{background:var(--neon-green)} .led.off{background:rgba(255,255,255,0.06)}
+        button {
+            padding: 8px 15px;
+            background: #0f0;
+            color: #000;
+            font-weight: bold;
+            font-family: monospace;
+            cursor: pointer;
+            border: none;
+        }
 
-    /* subtle scanline/glitch overlay */
-    .scan {
-        position:fixed;inset:0;pointer-events:none;z-index:1;background-image: linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px);
-        background-size:100% 2px;mix-blend-mode:overlay;opacity:0.06;
-    }
+        button:hover {
+            background: #0c0;
+        }
+    </style>
+    <script>
+        function sendCommand() {
+            const cmd = document.getElementById('cmd').value;
 
-    /* small responsive */
-    @media (max-width:600px){
-        header{flex-direction:column;align-items:flex-start}
-        .brand .title{font-size:14px}
-    }
-</style>
+            fetch('/cli/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: cmd })
+            }).then(() => {
+                document.getElementById('cmd').value = '';
+            });
+        }
+
+        function pollOutput() {
+            fetch('/cli/receive')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.output) {
+                        const outputDiv = document.getElementById('output');
+                        outputDiv.textContent += data.output + "\n";
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                    }
+                    pollOutput();
+                });
+        }
+
+        window.onload = pollOutput;
+    </script>
 </head>
 <body>
-<div class="scan" aria-hidden="true"></div>
-
-<div class="wrap">
-    <header>
-        <div class="brand">
-            <div class="logo" aria-hidden="true">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 12h18" stroke="#00ff88" stroke-width="1.2" stroke-linecap="round"/>
-                </svg>
-            </div>
-            <div>
-                <div class="title">OPENTTY • terminal</div>
-                <div style="font-size:12px;color:rgba(0,255,136,0.25)">Session: <span id="sessionId">—</span></div>
-            </div>
-        </div>
-
-        <div class="controls" aria-hidden="true">
-            <span class="led on" id="ledConn" title="Conexão"></span>
-            <button id="clearBtn" title="Limpar tela">Limpar</button>
-            <button id="disconnectBtn" title="Desconectar">Desconectar</button>
-        </div>
-    </header>
-
-    <main id="terminal" role="log" aria-live="polite" tabindex="0">
-        <div style="opacity:0.6">[sistema] Conectando ao proxy... aguarde.</div>
-    </main>
-
-    <div class="input-row" role="form" aria-label="Comandos">
-        <input id="cmd" type="text" placeholder="Digite comando e pressione Enter" autocomplete="off" />
-        <button id="sendBtn">Enviar</button>
-    </div>
-</div>
-
-<script>
-    const outputEl = document.getElementById('terminal');
-    const cmdEl = document.getElementById('cmd');
-    const sendBtn = document.getElementById('sendBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    const sessionSpan = document.getElementById('sessionId');
-    const ledConn = document.getElementById('ledConn');
-
-    // show session id from cookie / server-session (Flask)
-    fetch('/api/json').then(r=>r.json()).catch(()=>null);
-
-    // Update session id placeholder (best-effort from cookie)
-    try {
-        // if Flask sets session cookie with conn_id, try to read
-        const cookies = document.cookie.split(';').map(s=>s.trim());
-        const sess = cookies.find(c=>c.startsWith('session='));
-        if(sess) sessionSpan.textContent = 'active';
-        else sessionSpan.textContent = '—';
-    } catch(e){ sessionSpan.textContent = '—' }
-
-    // Append safely to output
-    function appendOutput(text, opts={}) {
-        const div = document.createElement('div');
-        if (opts.className) div.className = opts.className;
-        div.textContent = text;
-        outputEl.appendChild(div);
-        outputEl.scrollTop = outputEl.scrollHeight;
-    }
-
-    // send command
-    async function sendCommand(){
-        const cmd = cmdEl.value.trim();
-        if(!cmd) return;
-        appendOutput('> ' + cmd);
-        cmdEl.value = '';
-        try {
-            const res = await fetch('/cli/send', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({command: cmd})
-            });
-            if(!res.ok) appendOutput('[erro] Falha ao enviar comando: ' + res.statusText);
-        } catch (e) {
-            appendOutput('[erro] ' + e.message);
-            ledConn.classList.remove('on'); ledConn.classList.add('off');
-        }
-    }
-
-    sendBtn.addEventListener('click', sendCommand);
-    cmdEl.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter'){ e.preventDefault(); sendCommand(); }
-        if(e.key === 'ArrowUp' || e.key === 'ArrowDown'){ /* future: history */ }
-    });
-
-    clearBtn.addEventListener('click', ()=>{ outputEl.innerHTML = ''; appendOutput('[sistema] terminal limpo'); });
-
-    disconnectBtn.addEventListener('click', async ()=>{
-        try {
-            await fetch('/cli/send', {
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body: JSON.stringify({command: 'exit'})
-            });
-        } catch(e){}
-        appendOutput('[sistema] desconectado'); ledConn.classList.remove('on'); ledConn.classList.add('off');
-    });
-
-    // --- Long polling receive ---
-    let receiving = false;
-    async function pollOutput(){
-        if(receiving) return;
-        receiving = true;
-        try {
-            const res = await fetch('/cli/receive', {cache:'no-store'});
-            if(res.status === 401){
-                appendOutput('[sistema] sessão não autorizada'); return;
-            }
-            const data = await res.json();
-            if(data && data.output){
-                // split lines, append keeping formatting
-                appendOutput(data.output);
-            }
-        } catch (e) {
-            appendOutput('[sistema] erro na recepção: ' + e.message);
-            ledConn.classList.remove('on'); ledConn.classList.add('off');
-            // wait a bit before retrying on network errors
-            await new Promise(r=>setTimeout(r, 1500));
-        } finally {
-            receiving = false;
-            // immediately call again for new data (long-poll style)
-            pollOutput();
-        }
-    }
-
-    // focus terminal input on load
-    window.addEventListener('load', ()=>{ cmdEl.focus(); pollOutput(); });
-
-    // small accessibility: click terminal to focus input
-    outputEl.addEventListener('click', ()=> cmdEl.focus());
-
-    // allow Ctrl+L to clear
-    window.addEventListener('keydown', (e)=>{
-        if(e.ctrlKey && e.key.toLowerCase() === 'l'){ e.preventDefault(); outputEl.innerHTML=''; appendOutput('[sistema] terminal limpo'); }
-    });
-</script>
+    <h1>Terminal Proxy</h1>
+    <div id="output"></div>
+    <input type="text" id="cmd" placeholder="Digite comando">
+    <button onclick="sendCommand()">Enviar</button>
 </body>
 </html>
