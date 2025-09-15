@@ -1,6 +1,6 @@
-import threading
 import socket
-import uuid, os
+import threading
+import uuid, os, time
 from flask import Flask, Response, request, session, redirect, render_template, url_for, jsonify
 from flask_cors import CORS
 
@@ -73,9 +73,8 @@ def load_versions():
 
 
 @app.route('/cli/')
-def index():
-    return render_template('login.html')
-
+def index(): return render_template('login.html')
+# |
 @app.route('/cli/login', methods=['POST'])
 def login():
     conn_id = request.form['conn_id']
@@ -83,26 +82,21 @@ def login():
 
     conn_data = connections.get(conn_id)
 
-    if not conn_data:
-        return 'ID inválido', 403
-    if conn_data['password'] != password:
-        return 'Senha incorreta', 403
-    if conn_data['in_use']:
-        return 'Sessão já está em uso', 403
-    if conn_data.get('disconnected', False):
-        return 'Conexão encerrada', 403
+    if not conn_data: return 'ID inválido', 403
+    if conn_data['password'] != password: return 'Senha incorreta', 403
+    if conn_data['in_use']: return 'Sessão já está em uso', 403 
+    if conn_data.get('disconnected', False): return 'Conexão encerrada', 403
 
     conn_data['in_use'] = True
     session['conn_id'] = conn_id
 
     return redirect(url_for('terminal'))
-
+# |
 @app.route('/cli/terminal')
 def terminal():
-    if 'conn_id' not in session:
-        return redirect('/cli/')
+    if 'conn_id' not in session: return redirect('/cli/')
     return render_template('terminal.html')
-
+# |
 @app.route('/cli/send', methods=['POST'])
 def send_command():
     if 'conn_id' not in session:
@@ -125,19 +119,16 @@ def send_command():
     except Exception as e:
         print(f'[FLASK] Erro ao enviar comando: {e}')
         return f'Erro: {e}', 500
-
+# |
 @app.route('/cli/receive')
 def receive_data():
-    if 'conn_id' not in session:
-        return 'Não autorizado', 401
+    if 'conn_id' not in session: return 'Não autorizado', 401
 
     conn_id = session['conn_id']
     conn_data = connections.get(conn_id)
 
-    if not conn_data:
-        return 'Sessão inválida', 400
+    if not conn_data: return 'Sessão inválida', 400
 
-    import time
     start = time.time()
     while time.time() - start < 25:
         output = conn_data['buffer']
@@ -148,6 +139,8 @@ def receive_data():
 
     return jsonify({'output': ''})
 
+# Reader API
+# |
 @app.route("/api/json", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
 def info_json():
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
@@ -157,17 +150,17 @@ def info_json():
         "agent": request.headers.get('User-Agent'),
         "method": request.method,
     })
-
+# |
 @app.route("/api/ip")
 def ip_only():
     client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     return Response(client_ip, mimetype='text/plain')
-
+# |
 @app.route("/api/ua")
 def user_agent_only():
     user_agent = request.headers.get('User-Agent')
     return Response(user_agent, mimetype='text/plain')
-
+# |
 @app.route("/api/headers")
 def headers_plaintext():
     headers = ""
