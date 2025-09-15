@@ -137,9 +137,16 @@ def receive_data():
     if not conn_data:
         return 'Sessão inválida', 400
 
-    output = conn_data['buffer']
-    conn_data['buffer'] = ''
-    return jsonify({'output': output})
+    import time
+    start = time.time()
+    while time.time() - start < 25:
+        output = conn_data['buffer']
+        if output:
+            conn_data['buffer'] = ''
+            return jsonify({'output': output})
+        time.sleep(0.2)
+
+    return jsonify({'output': ''})
 
 @app.route("/api/json", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
 def info_json():

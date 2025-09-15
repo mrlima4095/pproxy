@@ -23,11 +23,11 @@
                         outputDiv.textContent += data.output + "\n";
                         outputDiv.scrollTop = outputDiv.scrollHeight;
                     }
+                    pollOutput(); // chama de novo quando terminar
                 });
         }
 
-        setInterval(pollOutput, 1000);
-
+        pollOutput();
     </script>
 </head>
 <body>
