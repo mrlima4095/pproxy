@@ -1,7 +1,7 @@
 import threading
 import socket
 import uuid
-from flask import Flask, request, session, redirect, render_template, url_for, jsonify
+from flask import Flask, Response, request, session, redirect, render_template, url_for, jsonify
 from flask_cors import CORS
 
 app = Flask(__name__)
