@@ -70,8 +70,6 @@ def load_versions():
             return json.load(f)
     return {"downloads": [], "news": []}
 
-
-
 @app.route('/cli/')
 def index(): return render_template('login.html')
 # |
