@@ -136,6 +136,16 @@ def receive_data():
         time.sleep(0.2)
 
     return jsonify({'output': ''})
+# |
+@app.route('/cli/session')
+def get_session():
+    if 'conn_id' not in session:
+        return jsonify({"active": False}), 401
+    conn_id = session['conn_id']
+    conn_data = connections.get(conn_id)
+    if not conn_data or conn_data.get('disconnected', False):
+        return jsonify({"active": False}), 400
+    return jsonify({"active": True, "id": conn_id})
 
 # Reader API
 # |

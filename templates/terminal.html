@@ -204,7 +204,20 @@
         const sessionSpan = document.getElementById('sessionId');
         const ledConn = document.getElementById('ledConn');
 
-        // show session id from cookie / server-session (Flask)
+        // pegar id real da sessão
+        fetch('/cli/session').then(async r => {
+            if (!r.ok) {
+                window.location = "/cli/";
+                return;
+            }
+            const data = await r.json();
+            if (data.active) {
+                sessionSpan.textContent = data.id;
+                outputEl.innerHTML = `<div style="opacity:0.6">[ WebProxy ] Connected to ${data.id}</div>`;
+            } else {
+                window.location = "/cli/";
+            }
+        }).catch(() => window.location = "/cli/");
         fetch('/api/json').then(r => r.json()).catch(() => null);
 
         // Update session id placeholder (best-effort from cookie)
@@ -272,6 +285,7 @@
             } catch (e) { }
             window.document.location = "/cli/"
         });
+
 
         // --- Long polling receive ---
         let receiving = false;
