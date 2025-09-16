@@ -269,9 +269,7 @@
                 body: JSON.stringify({ command: 'exit' })
             });
         } catch (e) { }
-        appendOutput('[sistema] desconectado');
-        ledConn.classList.remove('on');
-        ledConn.classList.add('off');
+        window.document.location = "/cli/"
     });
 
     // --- Long polling receive ---
