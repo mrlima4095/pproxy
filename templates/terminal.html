@@ -179,18 +179,18 @@
 
         <div class="controls" aria-hidden="true">
             <span class="led on" id="ledConn" title="Conexão"></span>
-            <button id="clearBtn" title="Limpar tela">Limpar</button>
-            <button id="disconnectBtn" title="Desconectar">Desconectar</button>
+            <button id="clearBtn" title="Clear consoles">Clear</button>
+            <button id="disconnectBtn" title="Desconectar">Desconnect</button>
         </div>
     </header>
 
     <main id="terminal" role="log" aria-live="polite" tabindex="0">
-        <div style="opacity: 0.6">[sistema] Conectando ao proxy... aguarde.</div>
+        <div style="opacity: 0.6">[ WebProxy ] Connected to server.</div>
     </main>
 
     <div class="input-row" role="form" aria-label="Comandos">
-        <input id="cmd" type="text" placeholder="Digite comando e pressione Enter" autocomplete="off" />
-        <button id="sendBtn">Enviar</button>
+        <input id="cmd" type="text" placeholder="Type command and press Enter" autocomplete="off" />
+        <button id="sendBtn">Send</button>
     </div>
 </div>
 
@@ -233,10 +233,9 @@
     // send command
     async function sendCommand() {
         const cmd = cmdEl.value.trim();
-        if (!cmd) {
-            return;
-        }
-        appendOutput('> ' + cmd);
+        if (!cmd) { return; }
+
+        appendOutput('$ ' + cmd);
         cmdEl.value = '';
         try {
             const res = await fetch('/cli/send', {
@@ -244,11 +243,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: cmd })
             });
-            if (!res.ok) {
-                appendOutput('[erro] Falha ao enviar comando: ' + res.statusText);
+            if (!res.ok) { appendOutput('[ ERROR ] ' + res.statusText);
             }
         } catch (e) {
-            appendOutput('[erro] ' + e.message);
+            appendOutput('[ ERROR ] ' + e.message);
             ledConn.classList.remove('on');
             ledConn.classList.add('off');
         }
@@ -257,19 +255,11 @@
     sendBtn.addEventListener('click', sendCommand);
 
     cmdEl.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            sendCommand();
-        }
-        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-            // future: history
-        }
+        if (e.key === 'Enter') { e.preventDefault(); sendCommand(); }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { }
     });
 
-    clearBtn.addEventListener('click', () => {
-        outputEl.innerHTML = '';
-        appendOutput('[sistema] terminal limpo');
-    });
+    clearBtn.addEventListener('click', () => { outputEl.innerHTML = ''; });
 
     disconnectBtn.addEventListener('click', async () => {
         try {
@@ -278,7 +268,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: 'exit' })
             });
-        } catch (e) {}
+        } catch (e) { }
         appendOutput('[sistema] desconectado');
         ledConn.classList.remove('on');
         ledConn.classList.add('off');
@@ -294,16 +284,12 @@
         receiving = true;
         try {
             const res = await fetch('/cli/receive', { cache: 'no-store' });
-            if (res.status === 401) {
-                appendOutput('[sistema] sessão não autorizada');
-                return;
-            }
+            if (res.status === 401 || res.status === 400) { window.document.location = "/cli/" }
+
             const data = await res.json();
-            if (data && data.output) {
-                appendOutput(data.output);
-            }
+            if (data && data.output) { appendOutput(data.output); }
         } catch (e) {
-            appendOutput('[sistema] erro na recepção: ' + e.message);
+            appendOutput(e.message);
             ledConn.classList.remove('on');
             ledConn.classList.add('off');
             await new Promise(r => setTimeout(r, 1500));
@@ -313,22 +299,10 @@
         }
     }
 
-    // focus terminal input on load
-    window.addEventListener('load', () => {
-        cmdEl.focus();
-        pollOutput();
-    });
+    window.addEventListener('load', () => { cmdEl.focus(); pollOutput(); });
 
-    // small accessibility: click terminal to focus input
     outputEl.addEventListener('click', () => cmdEl.focus());
-
-    // allow Ctrl+L to clear
-    window.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key.toLowerCase() === 'l') {
-            e.preventDefault();
-            outputEl.innerHTML = '';
-            appendOutput('[sistema] terminal limpo');
-        }
+    window.addEventListener('keydown', (e) => { if (e.ctrlKey && e.key.toLowerCase() === 'l') { e.preventDefault(); outputEl.innerHTML = ''; }
     });
 </script>
 </body>
