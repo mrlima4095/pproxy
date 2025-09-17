@@ -5,7 +5,7 @@ from flask import Flask, Response, request, session, redirect, render_template, 
 from flask_cors import CORS
 
 app = Flask(__name__)
-JSON_FILE = "versions.json"
+JSON_FILE = "/var/www/opentty/repo/assets/root/web.json"
 app.secret_key = 'segredo_super_seguro'
 CORS(app)
 
@@ -73,6 +73,8 @@ def load_versions():
 @app.route('/cli/')
 def index(): return render_template('login.html')
 # |
+from flask import render_template_string
+
 @app.route('/cli/login', methods=['POST'])
 def login():
     conn_id = request.form['conn_id']
@@ -80,14 +82,13 @@ def login():
 
     conn_data = connections.get(conn_id)
 
-    if not conn_data: return 'ID inválido', 403
-    if conn_data['password'] != password: return 'Senha incorreta', 403
-    if conn_data['in_use']: return 'Sessão já está em uso', 403 
-    if conn_data.get('disconnected', False): return 'Conexão encerrada', 403
+    if not conn_data: return render_template("login.html", error="ID inválido")
+    if conn_data['password'] != password: return render_template("login.html", error="Senha incorreta")
+    if conn_data['in_use']: return render_template("login.html", error="Sessão já em uso")
+    if conn_data.get('disconnected', False): return render_template("login.html", error="Conexão encerrada")
 
     conn_data['in_use'] = True
     session['conn_id'] = conn_id
-
     return redirect(url_for('terminal'))
 # |
 @app.route('/cli/terminal')
