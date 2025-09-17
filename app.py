@@ -1,7 +1,7 @@
 import socket
 import threading
 import uuid, os, time
-from flask import Flask, Response, request, session, redirect, render_template, url_for, jsonify
+from flask import Flask, Response, request, session, redirect, render_template, url_for, jsonify, render_template_string
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -73,8 +73,6 @@ def load_versions():
 @app.route('/cli/')
 def index(): return render_template('login.html')
 # |
-from flask import render_template_string
-
 @app.route('/cli/login', methods=['POST'])
 def login():
     conn_id = request.form['conn_id']
