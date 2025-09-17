@@ -78,6 +78,7 @@
             font-size: 13px;
             line-height: 1.25;
             white-space: pre-wrap;
+            user-select: text; /* agora dá pra copiar fácil */
         }
 
         .cursor {
@@ -115,11 +116,19 @@
         }
 
         button {
-            padding: 10px 14px;
+            padding: 10px 16px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.04);
-            background: linear-gradient(90deg, rgba(0, 255, 136, 0.06), rgba(255, 45, 149, 0.03));
+            border: 1px solid rgba(0,255,136,0.2);
+            background: linear-gradient(90deg, rgba(0,255,136,0.2), rgba(255,45,149,0.15));
+            color: var(--neon-green);
+            font-weight: bold;
+            letter-spacing: 1px;
             cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, rgba(0,255,136,0.35), rgba(255,45,149,0.25));
+            transform: scale(1.03);
         }
 
         /* little status leds */
@@ -233,12 +242,18 @@
             sessionSpan.textContent = '—';
         }
 
-        // Append safely to output
+        let history = [];
+        let historyIndex = -1;
+
+        // sobrescrever appendOutput para limpar tela quando vier clear
         function appendOutput(text, opts = {}) {
-            const div = document.createElement('div');
-            if (opts.className) {
-                div.className = opts.className;
+            // detectar sequência ANSI de clear screen
+            if (text.includes("\x1b[H") && text.includes("\x1b[2J")) {
+                outputEl.innerHTML = "";
+                return;
             }
+            const div = document.createElement('div');
+            if (opts.className) div.className = opts.className;
             div.textContent = text;
             outputEl.appendChild(div);
             outputEl.scrollTop = outputEl.scrollHeight;
@@ -247,18 +262,20 @@
         // send command
         async function sendCommand() {
             const cmd = cmdEl.value.trim();
-            if (!cmd) { return; }
+            if (!cmd) return;
 
             appendOutput('$ ' + cmd);
+            history.push(cmd);
+            historyIndex = history.length; // aponta pro fim
             cmdEl.value = '';
+
             try {
                 const res = await fetch('/cli/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ command: cmd })
                 });
-                if (!res.ok) { appendOutput('[ ERROR ] ' + res.statusText);
-                }
+                if (!res.ok) { appendOutput('[ ERROR ] ' + res.statusText); }
             } catch (e) {
                 appendOutput('[ ERROR ] ' + e.message);
                 ledConn.classList.remove('on');
@@ -286,6 +303,29 @@
             window.document.location = "/cli/"
         });
 
+        cmdEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { 
+                e.preventDefault(); 
+                sendCommand(); 
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (historyIndex > 0) {
+                    historyIndex--;
+                    cmdEl.value = history[historyIndex];
+                }
+            }
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    cmdEl.value = history[historyIndex];
+                } else {
+                    historyIndex = history.length;
+                    cmdEl.value = '';
+                }
+            }
+        });
 
         // --- Long polling receive ---
         let receiving = false;
