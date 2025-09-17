@@ -27,6 +27,18 @@
         .hint{ font-size: 12px; color: rgba(0,255,136,0.35) }
         .preview{ margin-top: 6px; padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.55); color: var(--neon-green); font-family: var(--mono); font-size: 12px; height: 88px; overflow: auto; border: 1px dashed rgba(0,255,136,0.06) }
 
+        .errorBox {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            background: rgba(255, 0, 150, 0.08);
+            border: 1px solid rgba(255, 45, 149, 0.3);
+            color: var(--neon-pink);
+            font-size: 12px;
+            text-align: center;
+            box-shadow: 0 0 18px rgba(255, 45, 149, 0.15);
+        }
+
         .card:focus-within{ box-shadow: 0 0 40px rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.14) }
         .meta{ position: absolute; left: 18px; top: 14px; color: rgba(0,255,136,0.18); font-size: 11px; z-index: 3 }
     </style>
@@ -65,10 +77,9 @@
                 </div>
 
                 <div class="preview" aria-live="polite">
-                    booting...
-                    <div style="opacity:0.6">> Authenticating remote session... <span style="color:var(--neon-pink)">ok</span></div>
-                    <div style="opacity:0.6">> handshaking encryption... <span style="color:var(--neon-pink)">ok</span></div>
-                    <div style="opacity:0.6">> welcome, @operator</div>
+                    {% if error %}
+                        <div class="errorBox">{{ error }}</div>
+                    {% endif %}
                 </div>
             </form>
         </div>
