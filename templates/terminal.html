@@ -297,7 +297,7 @@
                 await fetch('/cli/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: 'exit' })
+                    body: JSON.stringify({ command: '/exit' })
                 });
             } catch (e) { }
             window.document.location = "/cli/"
