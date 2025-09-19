@@ -103,6 +103,14 @@
     </div>
 
     <script>
+        function showError(msg) {
+            const preview = document.querySelector('.preview');
+            const div = document.createElement('div');
+            div.className = 'errorBox';
+            div.textContent = msg;
+            preview.appendChild(div);
+        }
+
         const inputs = document.querySelectorAll('input');
 
         inputs.forEach(i => { 
@@ -115,14 +123,6 @@
 
             if (/^[0-9a-f]{8}$/i.test(v)) { document.getElementById('password').focus(); }
         });
-
-        function showError(msg) {
-            const preview = document.querySelector('.preview');
-            const div = document.createElement('div');
-            div.className = 'errorBox';
-            div.textContent = msg;
-            preview.appendChild(div);
-        }
     </script>
 </body>
 </html>
