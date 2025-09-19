@@ -83,8 +83,8 @@
 
                 <label for="password">Password</label>
                 <div style="display:flex; gap:8px; margin-top:6px; align-items:center;">
-                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" style="flex:1;">
-                    <button type="submit">Connect</button>
+                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" style="flex:1; height:44px;">
+                    <button type="submit" style="height:44px; display:flex; align-items:center; justify-content:center;">Connect</button>
                 </div>
 
                 <div class="preview" aria-live="polite">
@@ -101,14 +101,6 @@
     </div>
 
     <script>
-        function showError(msg) {
-            const preview = document.querySelector('.preview');
-            const div = document.createElement('div');
-            div.className = 'errorBox';
-            div.textContent = msg;
-            preview.appendChild(div);
-        }
-
         const inputs = document.querySelectorAll('input');
 
         inputs.forEach(i => { 
