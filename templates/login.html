@@ -83,18 +83,18 @@
                 <label for="conn_id">Connection ID</label>
                 <input id="conn_id" name="conn_id" type="text" placeholder="ex: a1b2c3d4" required autocomplete="off">
 
-                <label for="password">Password</label>
-                <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
-
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-                    <div class="hint">Protocol: Proxy → TCP</div>
-                    <div style="display:flex;gap:8px">
-                        <button type="submit">Connect</button>
-                    </div>
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+                    <div style="display:flex;gap:8px"><button type="submit">Connect</button></div>
                 </div>
 
                 <div class="preview" aria-live="polite">
-                    {% if error %}
+                    {% if errors %}
+                        {% for err in errors %}
+                            <div class="errorBox">{{ err }}</div>
+                        {% endfor %}
+                    {% elif error %}
                         <div class="errorBox">{{ error }}</div>
                     {% endif %}
                 </div>
@@ -115,6 +115,14 @@
 
             if (/^[0-9a-f]{8}$/i.test(v)) { document.getElementById('password').focus(); }
         });
+        
+        function showError(msg) {
+            const preview = document.querySelector('.preview');
+            const div = document.createElement('div');
+            div.className = 'errorBox';
+            div.textContent = msg;
+            preview.appendChild(div);
+        }
     </script>
 </body>
 </html>
