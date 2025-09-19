@@ -79,12 +79,12 @@ def login():
     password = request.form['password']
 
     conn_data = connections.get(conn_id)
-    
+
     errors = []
     if not conn_data: errors.append("Invalid ID")
-    elif conn_data['password'] != password: errors.append("Invalid password")
-    elif conn_data['in_use']: errors.append("Busy session")
-    elif conn_data.get('disconnected', False): errors.append("Connection closed")
+    if conn_data['password'] != password: errors.append("Invalid password")
+    if conn_data['in_use']: errors.append("Busy session")
+    if conn_data.get('disconnected', False): errors.append("Connection closed")
 
     if errors: return render_template("login.html", errors=errors)
 
