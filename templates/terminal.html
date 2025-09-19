@@ -106,9 +106,7 @@
             const sess = cookies.find(c => c.startsWith('session='));
             if (sess) { sessionSpan.textContent = 'active'; } 
             else { sessionSpan.textContent = '—'; }
-        } catch (e) {
-            sessionSpan.textContent = '—';
-        }
+        } catch (e) { sessionSpan.textContent = '—'; }
 
         let history = [];
         let historyIndex = -1;
@@ -216,6 +214,14 @@
                 pollOutput();
             }
         }
+
+        let shouldDisconnect = true;
+
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { shouldDisconnect = false; } else { shouldDisconnect = true; } });
+
+        window.addEventListener('beforeunload', (e) => { if (shouldDisconnect) { navigator.sendBeacon('/cli/disconnect'); } });
+        window.addEventListener('pagehide', (e) => { if (e.persisted) { return; } if (shouldDisconnect) { navigator.sendBeacon('/cli/disconnect'); } });
+
 
         window.addEventListener('load', () => { cmdEl.focus(); pollOutput(); });
 

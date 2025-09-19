@@ -145,6 +145,19 @@ def get_session():
     if not conn_data or conn_data.get('disconnected', False): return jsonify({"active": False}), 400
 
     return jsonify({"active": True, "id": conn_id})
+# |
+@app.route('/cli/disconnect', methods=['POST'])
+def disconnect():
+    conn_id = session.get('conn_id')
+    if conn_id:
+        conn_data = connections.get(conn_id)
+        if conn_data:
+            conn_data['in_use'] = False
+            conn_data['disconnected'] = True
+            
+        session.pop('conn_id', None)
+    return 'OK', 200
+
 
 # Reader API
 # |
