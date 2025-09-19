@@ -153,7 +153,7 @@ def disconnect():
         conn_data = connections.get(conn_id)
         if conn_data:
             conn_data['in_use'] = False
-            conn_data['disconnected'] = True
+            conn_data['disconnected'] = False
             
         session.pop('conn_id', None)
     return 'OK', 200
