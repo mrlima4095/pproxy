@@ -158,7 +158,6 @@ def disconnect():
         session.pop('conn_id', None)
     return 'OK', 200
 
-
 # Reader API
 # |
 @app.route("/api/json", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
