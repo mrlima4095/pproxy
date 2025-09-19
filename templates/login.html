@@ -19,7 +19,20 @@
         .logo .sub { font-size: 12px; color: rgba(0,255,136,0.6); }
 
         label { display: block; font-size: 12px; color: rgba(0,255,136,0.9); margin-bottom: 6px; }
-        input[type=text], input[type=password] { width: 100%; padding: 12px 14px; border-radius: 6px; background: transparent; border: 1px solid rgba(0,255,136,0.06); color: var(--neon-green); outline: none ; font-family: var(--mono); font-size: 14px; box-shadow: 0 0 18px rgba(0,255,136,0.02) inset; }
+        input[type=text], input[type=password] {
+            width: 100%;
+            padding: 12px 14px;
+            margin-bottom: 12px;      /* espaçamento entre inputs */
+            border-radius: 6px;
+            background: transparent;
+            border: 1px solid rgba(0,255,136,0.06);
+            color: var(--neon-green);
+            outline: none;
+            font-family: var(--mono);
+            font-size: 14px;
+            box-shadow: 0 0 18px rgba(0,255,136,0.02) inset;
+            box-sizing: border-box;    /* considera padding e border no width */
+        }
         input::placeholder { color: rgba(0,255,136,0.25); }
 
         .row { display: flex; gap: 12px; align-items: center; }
@@ -69,9 +82,9 @@
                 <input id="conn_id" name="conn_id" type="text" placeholder="ex: a1b2c3d4" required autocomplete="off">
 
                 <label for="password">Password</label>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
-                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
-                    <div style="display:flex;gap:8px"><button type="submit">Connect</button></div>
+                <div style="display:flex; gap:8px; margin-top:6px; align-items:center;">
+                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" style="flex:1;">
+                    <button type="submit">Connect</button>
                 </div>
 
                 <div class="preview" aria-live="polite">
