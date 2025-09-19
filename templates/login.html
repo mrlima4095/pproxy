@@ -40,10 +40,6 @@
         }
         button:hover { background: linear-gradient(90deg, rgba(0,255,136,0.4), rgba(255,45,149,0.3)); transform: scale(1.03); }
 
-        .input-button-group { display: flex; gap: 8px; margin-top: 6px; align-items: stretch; }
-        .input-button-group input { flex: 1; padding: 12px 14px; font-family: var(--mono); font-size: 14px; border-radius: 6px; border: 1px solid rgba(0,255,136,0.06); background: transparent; color: var(--neon-green); outline: none; box-sizing: border-box; }
-        .input-button-group button { padding: 12px 18px; border-radius: 6px; font-family: var(--mono); font-size: 14px; border: 1px solid rgba(0,255,136,0.2); background: linear-gradient(90deg, rgba(0,255,136,0.25), rgba(255,45,149,0.2)); color: var(--neon-green); font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 6px 18px rgba(0,0,0,0.6); transition: 0.2s; }
-
         .card:focus-within{ box-shadow: 0 0 40px rgba(0,255,136,0.06); border: 1px solid rgba(0,255,136,0.14) }
         .meta{ position: absolute; left: 18px; top: 14px; color: rgba(0,255,136,0.18); font-size: 11px; z-index: 3 }
     </style>
@@ -72,8 +68,8 @@
                 <input id="conn_id" name="conn_id" type="text" placeholder="ex: a1b2c3d4" required autocomplete="off">
 
                 <label for="password">Password</label>
-                <div class="input-button-group">
-                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+                <div style="display:flex; gap:8px; margin-top:6px; align-items:center;">
+                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" style="flex:1;">
                     <button type="submit">Connect</button>
                 </div>
 
@@ -91,6 +87,14 @@
     </div>
 
     <script>
+        function showError(msg) {
+            const preview = document.querySelector('.preview');
+            const div = document.createElement('div');
+            div.className = 'errorBox';
+            div.textContent = msg;
+            preview.appendChild(div);
+        }
+
         const inputs = document.querySelectorAll('input');
 
         inputs.forEach(i => { 
