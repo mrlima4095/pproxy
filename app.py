@@ -57,7 +57,7 @@ def start_tcp_server(host='0.0.0.0', port=4096):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((host, port))
-    server.listen(50)
+    server.listen(31522)
     print(f'[TCP] Servidor escutando em {host}:{port}')
 
     while True:
@@ -210,4 +210,4 @@ def post():
 
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
-    app.run(host='0.0.0.0', port=10141, debug=True, use_reloader=False)
+    app.run(host='127.0.0.1', port=10141, debug=True, use_reloader=False)
