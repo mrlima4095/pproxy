@@ -8,7 +8,7 @@ The system allows remote clients to connect to the server through **TCP**, while
 ## 🌐 Address
 
 * **Web Panel:**
-  [`https://opentty.xyz/cli/`](https://opentty.xyz/cli/)
+  [`http://opentty.xyz/cli/`](http://opentty.xyz/cli/)
 
 * **TCP Bind Server:**
   `opentty.xyz:4096`
@@ -22,7 +22,7 @@ The system allows remote clients to connect to the server through **TCP**, while
    * It provides a password upon connection.
    * It receives back a **unique session ID** (`conn_id`).
 
-2. The operator accesses `https://opentty.xyz/cli/` in the browser.
+2. The operator accesses `http://opentty.xyz/cli/` in the browser.
 
    * Enters the `conn_id` and the corresponding password.
    * If approved, an **interactive web terminal** opens.
@@ -63,7 +63,7 @@ The system allows remote clients to connect to the server through **TCP**, while
 
 * `GET /cli/` → Login page
 * `POST /cli/login` → Session authentication
-* `GET /cli/terminal` → Web terminal
+* `GET /cli/terminal` → Web Terminal
 * `POST /cli/send` → Send commands
 * `GET /cli/receive` → Receive output (long polling)
 * `GET /cli/session` → Session status
@@ -99,7 +99,7 @@ You can use this to access your control your OpenTTY in dumbphones with only sup
 2. Run Lua Script:
 
     * `bg lua proxy.lua [password]`
-    * It prints `WebProxy ID: [id]` use **id** and password to connect in [WebPanel](https://opentty.xyz/cli/)
+    * It prints `WebProxy ID: [id]` use **id** and password to connect in [WebPanel](http://opentty.xyz/cli/)
 
 ---
 
@@ -108,7 +108,7 @@ You can use this to access your control your OpenTTY in dumbphones with only sup
 Clone the repository and run the Flask + TCP server:
 
 ```bash
-git clone https://github.com/mrlima4095/pproxy.git
+git clone http://github.com/mrlima4095/pproxy.git
 cd pproxy
 
 pip install flask flask-cors
