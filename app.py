@@ -5,7 +5,7 @@ from flask import Flask, Response, request, session, redirect, render_template, 
 from flask_cors import CORS
 
 app = Flask(__name__)
-JSON_FILE = "/var/www/opentty/repo/assets/root/web.json"
+JSON_FILE = "/var/www/opentty/assets/root/web.json"
 app.secret_key = 'segredo_super_seguro'
 CORS(app)
 
