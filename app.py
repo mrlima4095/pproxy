@@ -99,18 +99,15 @@ def terminal():
 # |
 @app.route('/cli/send', methods=['POST'])
 def send_command():
-    if 'conn_id' not in session:
-        return 'Não autorizado', 401
+    if 'conn_id' not in session: return 'Unauthorized', 401
 
     conn_id = session['conn_id']
     data = request.json
     command = data.get('command', '')
 
     conn_data = connections.get(conn_id)
-    if not conn_data:
-        return 'Sessão inválida', 400
-    if conn_data.get('disconnected', False):
-        return 'Conexão encerrada', 400
+    if not conn_data: return 'Invalid session', 400 
+    if conn_data.get('disconnected', False): return 'Connection closed', 400
 
     try:
         conn_data['conn'].sendall((command + '\n').encode())
@@ -122,12 +119,12 @@ def send_command():
 # |
 @app.route('/cli/receive')
 def receive_data():
-    if 'conn_id' not in session: return 'Não autorizado', 401
+    if 'conn_id' not in session: return 'Unauthorized', 401
 
     conn_id = session['conn_id']
     conn_data = connections.get(conn_id)
 
-    if not conn_data: return 'Sessão inválida', 400
+    if not conn_data or conn_data.get('disconnected', False): return jsonify({'output': '', 'redirect': '/cli/'}) 
 
     start = time.time()
     while time.time() - start < 25:
@@ -141,12 +138,12 @@ def receive_data():
 # |
 @app.route('/cli/session')
 def get_session():
-    if 'conn_id' not in session:
-        return jsonify({"active": False}), 401
+    if 'conn_id' not in session: return jsonify({"active": False}), 401
+
     conn_id = session['conn_id']
     conn_data = connections.get(conn_id)
-    if not conn_data or conn_data.get('disconnected', False):
-        return jsonify({"active": False}), 400
+    if not conn_data or conn_data.get('disconnected', False): return jsonify({"active": False}), 400
+
     return jsonify({"active": True, "id": conn_id})
 
 # Reader API

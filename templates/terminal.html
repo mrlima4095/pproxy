@@ -6,165 +6,39 @@
     <title>WebProxy</title>
 
     <style>
-        :root {
-            --bg: #010207;
-            --glass: rgba(255, 255, 255, 0.02);
-            --neon-green: #00ff88;
-            --neon-pink: #ff2d95;
-            --mono: "Courier New", Monaco, monospace;
-        }
+        :root { --bg: #010207; --glass: rgba(255, 255, 255, 0.02); --neon-green: #00ff88; --neon-pink: #ff2d95; --mono: "Courier New", Monaco, monospace; }
+        html, body { height: 100%; margin: 0; background: radial-gradient(ellipse at top, #061018 0%, #000004 60%); font-family: var(--mono); color: var(--neon-green); }
 
-        html, body {
-            height: 100%;
-            margin: 0;
-            background: radial-gradient(ellipse at top, #061018 0%, #000004 60%);
-            font-family: var(--mono);
-            color: var(--neon-green);
-        }
+        .wrap { display: flex; flex-direction: column; height: 100vh; padding: 18px; box-sizing: border-box; gap: 12px; }
 
-        .wrap {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding: 18px;
-            box-sizing: border-box;
-            gap: 12px;
-        }
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand .logo { width: 46px; height: 46px; border-radius: 6px; background: linear-gradient(180deg, #001218, #00101a); display: flex; align-items: center; justify-content: center; border: 1px solid rgba(0, 255, 136, 0.06); }
+        .brand .title { font-weight: 700; letter-spacing: 2px; }
 
-        header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
+        .controls { display: flex; gap: 8px; align-items: center; }
+        .cursor { display: inline-block; width: 8px; height: 16px; background: var(--neon-green); margin-left: 6px; animation: blink 1s steps(2) infinite; vertical-align: middle; border-radius: 2px; }
 
-        .brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+        #cmd { flex: 1; padding: 10px 12px; border-radius: 8px; background: transparent; border: 1px solid rgba(0, 255, 136, 0.06); color: var(--neon-green); font-family: var(--mono); outline: none; }
+        #terminal { flex: 1; background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(3, 3, 6, 0.45)); border-radius: 10px; padding: 14px; overflow: auto; border: 1px solid rgba(0, 255, 136, 0.06); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02); font-size: 13px; line-height: 1.25; white-space: pre-wrap; user-select: text; }
+        
+        @keyframes blink { 50% { opacity: 0 } }
 
-        .brand .logo {
-            width: 46px;
-            height: 46px;
-            border-radius: 6px;
-            background: linear-gradient(180deg, #001218, #00101a);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(0, 255, 136, 0.06);
-        }
+        .input-row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
 
-        .brand .title {
-            font-weight: 700;
-            letter-spacing: 2px;
-        }
+        button { padding: 10px 16px; border-radius: 8px; border: 1px solid rgba(0,255,136,0.2); background: linear-gradient(90deg, rgba(0,255,136,0.2), rgba(255,45,149,0.15)); color: var(--neon-green); font-weight: bold; letter-spacing: 1px; cursor: pointer; transition: 0.2s; }
+        button:hover { background: linear-gradient(90deg, rgba(0,255,136,0.35), rgba(255,45,149,0.25)); transform: scale(1.03); }
 
-        .controls {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
+        header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
-        /* terminal area */
-        #terminal {
-            flex: 1;
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), rgba(3, 3, 6, 0.45));
-            border-radius: 10px;
-            padding: 14px;
-            overflow: auto;
-            border: 1px solid rgba(0, 255, 136, 0.06);
-            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.02);
-            font-size: 13px;
-            line-height: 1.25;
-            white-space: pre-wrap;
-            user-select: text; /* agora dá pra copiar fácil */
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 16px;
-            background: var(--neon-green);
-            margin-left: 6px;
-            animation: blink 1s steps(2) infinite;
-            vertical-align: middle;
-            border-radius: 2px;
-        }
-
-        @keyframes blink {
-            50% { opacity: 0 }
-        }
-
-        /* input area */
-        .input-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 8px;
-            align-items: center;
-        }
-
-        #cmd {
-            flex: 1;
-            padding: 10px 12px;
-            border-radius: 8px;
-            background: transparent;
-            border: 1px solid rgba(0, 255, 136, 0.06);
-            color: var(--neon-green);
-            font-family: var(--mono);
-            outline: none;
-        }
-
-        button {
-            padding: 10px 16px;
-            border-radius: 8px;
-            border: 1px solid rgba(0,255,136,0.2);
-            background: linear-gradient(90deg, rgba(0,255,136,0.2), rgba(255,45,149,0.15));
-            color: var(--neon-green);
-            font-weight: bold;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover {
-            background: linear-gradient(90deg, rgba(0,255,136,0.35), rgba(255,45,149,0.25));
-            transform: scale(1.03);
-        }
-
-        /* little status leds */
-        .led {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 6px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
-        }
-
+        .led { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6); }
         .led.on { background: var(--neon-green) }
         .led.off { background: rgba(255, 255, 255, 0.06) }
 
-        /* subtle scanline/glitch overlay */
-        .scan {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 1;
-            background-image: linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px);
-            background-size: 100% 2px;
-            mix-blend-mode: overlay;
-            opacity: 0.06;
-        }
+        .scan { position: fixed; inset: 0; pointer-events: none; z-index: 1; background-image: linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px); background-size: 100% 2px; mix-blend-mode: overlay; opacity: 0.06; }
 
-        /* small responsive */
         @media (max-width: 600px) {
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            .brand .title {
-                font-size: 14px;
-            }
+            header { flex-direction: column; align-items: flex-start; }
+            .brand .title { font-size: 14px; }
         }
     </style>
 </head>
@@ -213,7 +87,6 @@
         const sessionSpan = document.getElementById('sessionId');
         const ledConn = document.getElementById('ledConn');
 
-        // pegar id real da sessão
         fetch('/cli/session').then(async r => {
             if (!r.ok) {
                 window.location = "/cli/";
@@ -223,21 +96,16 @@
             if (data.active) {
                 sessionSpan.textContent = data.id;
                 outputEl.innerHTML = `<div style="opacity:0.6">[ WebProxy ] Connected to ${data.id}</div>`;
-            } else {
-                window.location = "/cli/";
-            }
+            } 
+            else { window.location = "/cli/"; }
         }).catch(() => window.location = "/cli/");
         fetch('/api/json').then(r => r.json()).catch(() => null);
 
-        // Update session id placeholder (best-effort from cookie)
         try {
             const cookies = document.cookie.split(';').map(s => s.trim());
             const sess = cookies.find(c => c.startsWith('session='));
-            if (sess) {
-                sessionSpan.textContent = 'active';
-            } else {
-                sessionSpan.textContent = '—';
-            }
+            if (sess) { sessionSpan.textContent = 'active'; } 
+            else { sessionSpan.textContent = '—'; }
         } catch (e) {
             sessionSpan.textContent = '—';
         }
@@ -245,28 +113,23 @@
         let history = [];
         let historyIndex = -1;
 
-        // sobrescrever appendOutput para limpar tela quando vier clear
         function appendOutput(text, opts = {}) {
-            // detectar sequência ANSI de clear screen
-            if (text.includes("\x1b[H") && text.includes("\x1b[2J")) {
-                outputEl.innerHTML = "";
-                return;
-            }
+            if (text.includes("\x1b[H") && text.includes("\x1b[2J")) { outputEl.innerHTML = ""; return; }
+
             const div = document.createElement('div');
-            if (opts.className) div.className = opts.className;
+            if (opts.className) { div.className = opts.className; }
             div.textContent = text;
             outputEl.appendChild(div);
             outputEl.scrollTop = outputEl.scrollHeight;
         }
 
-        // send command
         async function sendCommand() {
             const cmd = cmdEl.value.trim();
             if (!cmd) return;
 
             appendOutput('$ ' + cmd);
             history.push(cmd);
-            historyIndex = history.length; // aponta pro fim
+            historyIndex = history.length; 
             cmdEl.value = '';
 
             try {
@@ -327,20 +190,22 @@
             }
         });
 
-        // --- Long polling receive ---
         let receiving = false;
 
         async function pollOutput() {
-            if (receiving) {
-                return;
-            }
+            if (receiving) return;
             receiving = true;
             try {
                 const res = await fetch('/cli/receive', { cache: 'no-store' });
-                if (res.status === 401 || res.status === 400) { window.document.location = "/cli/" }
-
                 const data = await res.json();
-                if (data && data.output) { appendOutput(data.output); }
+
+                if (res.status === 401 || res.status === 400 || data.redirect) {
+                    window.location = data.redirect || "/cli/";
+                    return;
+                }
+
+                if (data && data.output) appendOutput(data.output);
+
             } catch (e) {
                 appendOutput(e.message);
                 ledConn.classList.remove('on');
