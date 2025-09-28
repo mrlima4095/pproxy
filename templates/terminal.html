@@ -126,7 +126,10 @@
             if (!cmd) return;
 
             appendOutput('$ ' + cmd);
-            history.push(cmd);
+
+            if (history[history.length - 1] !== cmd) {
+                history.push(cmd);
+            }
             historyIndex = history.length; 
             cmdEl.value = '';
 
@@ -143,6 +146,7 @@
                 ledConn.classList.add('off');
             }
         }
+
 
         sendBtn.addEventListener('click', sendCommand);
 
