@@ -223,4 +223,4 @@ def post():
 
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
-    app.run(host='127.0.0.1', port=10141, debug=True, use_reloader=False)
+    app.run(host='127.0.0.1', port=10141, debug=False, use_reloader=False)
