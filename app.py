@@ -12,8 +12,6 @@ CORS(app)
 connections = {}  
 # {conn_id: {'conn': socket, 'addr': (ip, port), 'password': str, 'buffer': str, 'in_use': bool, 'disconnected': bool}}
 
-from flask import Flask, request, jsonify
-import requests
 
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL = "codellama:7b"
@@ -26,9 +24,23 @@ def ollama_chat(chat_id, messages):
     data = {
         "model": MODEL,
         "messages": messages,
+        "stream": True
     }
-    resp = requests.post(OLLAMA_URL, json=data)
-    return resp.json()["message"]["content"]
+    resp = requests.post(OLLAMA_URL, json=data, stream=True)
+
+    answer = ""
+    for line in resp.iter_lines():
+        if not line:
+            continue
+        part = line.decode("utf-8")
+        try:
+            j = requests.utils.json.loads(part)
+            if "message" in j and "content" in j["message"]:
+                answer += j["message"]["content"]
+        except Exception:
+            continue
+
+    return answer
 
 @app.route("/cli/chat", methods=["POST"])
 def chat():
