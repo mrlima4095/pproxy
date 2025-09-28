@@ -12,6 +12,51 @@ CORS(app)
 connections = {}  
 # {conn_id: {'conn': socket, 'addr': (ip, port), 'password': str, 'buffer': str, 'in_use': bool, 'disconnected': bool}}
 
+from flask import Flask, request, jsonify
+import requests
+
+OLLAMA_URL = "http://localhost:11434/api/chat"
+MODEL = "codellama:7b"
+
+app = Flask(__name__)
+
+sessions = {}
+
+def ollama_chat(chat_id, messages):
+    data = {
+        "model": MODEL,
+        "messages": messages,
+    }
+    resp = requests.post(OLLAMA_URL, json=data)
+    return resp.json()["message"]["content"]
+
+@app.route("/cli/chat", methods=["POST"])
+def chat():
+    body = request.get_json()
+    chat_id = body.get("chat_id", "default")
+    prompt = body.get("prompt", "")
+
+    # cria histórico se não existir
+    if chat_id not in sessions:
+        sessions[chat_id] = []
+
+    # detecta bloco de arquivo no estilo --- nome --- conteudo ---
+    context = ""
+    if prompt.strip().startswith("---"):
+        parts = prompt.split("---")
+        if len(parts) >= 3:
+            filename = parts[1].strip()
+            filecontent = parts[2].strip()
+            context = f"O usuário enviou o arquivo `{filename}` com conteúdo:\n{filecontent}\n\n"
+            question = "\n".join(parts[3:]).strip()
+            prompt = context + (question if question else "")
+    
+    sessions[chat_id].append({"role": "user", "content": prompt})
+    answer = ollama_chat(chat_id, sessions[chat_id])
+    sessions[chat_id].append({"role": "assistant", "content": answer})
+
+    return jsonify({"response": answer, "history": sessions[chat_id]})
+
 def handle_client(conn, addr):
     try:
         print(f'[TCP] Nova conexão de {addr}')
