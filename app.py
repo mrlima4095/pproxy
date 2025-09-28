@@ -17,8 +17,6 @@ connections = {}
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODEL = "codellama:7b"
 
-app = Flask(__name__)
-
 sessions = {}
 
 def ollama_chat(chat_id, messages):
