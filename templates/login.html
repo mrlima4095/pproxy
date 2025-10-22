@@ -26,6 +26,10 @@
         .hint{ font-size: 12px; color: rgba(0,255,136,0.35) }
         .preview{ margin-top: 6px; padding: 10px; border-radius: 6px; background: rgba(0,0,0,0.55); color: var(--neon-green); font-family: var(--mono); font-size: 12px; height: 88px; overflow: auto; border: 1px dashed rgba(0,255,136,0.06) }
 
+        .btn-row { display: flex; gap: 8px; align-items: stretch; }
+        .btn-row input { flex: 1; }
+        .btn-row button { height: 100%; padding: 0 16px; display: flex; align-items: center; justify-content: center; }
+
         button {
             cursor: pointer;
             padding: 12px 18px;
@@ -68,9 +72,9 @@
                 <input id="conn_id" name="conn_id" type="text" placeholder="ex: a1b2c3d4" required autocomplete="off">
 
                 <label for="password">Password</label>
-                <div style="display:flex; gap:8px; margin-top:6px; align-items:center;">
-                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password" style="flex:1;">
-                    <button type="button" href="/">Back</button>
+                <div class="row btn-row">
+                    <input id="password" name="password" type="password" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" onclick="location.href='/'">Back</button>
                     <button type="submit">Connect</button>
                 </div>
 
