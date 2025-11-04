@@ -71,6 +71,8 @@ def load_versions():
             return json.load(f)
     return {"downloads": [], "news": []}
 
+# WebProxy
+# |
 @app.route('/cli/')
 def index(): return render_template('login.html')
 # |
@@ -213,13 +215,13 @@ def post():
     body = request.get_data(as_text=True)
 
     print("=" * 40)
-    print(f"📥 Conexão de: {client_ip}:{client_port}")
-    print(f"📡 Caminho: {request.path}")
+    print(f"📥 Connection from: {client_ip}:{client_port}")
+    print(f"📡 Path: {request.path}")
     print(f"📦 Headers: {dict(request.headers)}")
-    print(f"📝 Conteúdo recebido:\n{body}")
+    print(f"📝 Payload:\n{body}")
     print("=" * 40)
 
-    return f"POST recebido com sucesso!\nConteudo: {body}\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
+    return f"POST received with sucess!\nContent: {body}\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
