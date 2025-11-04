@@ -359,5 +359,6 @@ def get_news():
 
 
 if __name__ == '__main__':
+    init_db()
     threading.Thread(target=start_tcp_server, daemon=True).start()
     app.run(host='127.0.0.1', port=10141, debug=False, use_reloader=False)
