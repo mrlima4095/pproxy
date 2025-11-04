@@ -202,8 +202,7 @@ def create_paste():
         conn.commit()
         conn.close()
         
-        if request.headers.get('Content-Type') == 'application/json':
-            return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
+        if request.headers.get('Content-Type') == 'application/json': return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
         
         return redirect(url_for('view_paste', paste_id=paste_id))
     except Exception as e: return jsonify({'error': str(e)}), 500
@@ -291,8 +290,7 @@ def api_create_paste():
         return jsonify({'error': str(e)}), 500
 
 @app.errorhandler(404)
-def not_found(error):
-    return render_template('error.html', error='Page not found'), 404
+def not_found(error): return render_template('error.html', error='Page not found'), 404
 
 
 # Reader API
