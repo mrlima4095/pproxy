@@ -1,17 +1,36 @@
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
+# |
 import socket
+import sqlite3
 import requests
 import threading
-import uuid, os, time, json
+import uuid, os, time, json, datetime
 from flask import Flask, Response, request, session, redirect, render_template, url_for, jsonify, render_template_string
 from flask_cors import CORS
 
 app = Flask(__name__)
+DATABASE = "snakebin.db"
 JSON_FILE = "/var/www/opentty/assets/root/web.json"
 app.secret_key = 'segredo_super_seguro'
 CORS(app)
 
-connections = {}  
-# {conn_id: {'conn': socket, 'addr': (ip, port), 'password': str, 'buffer': str, 'in_use': bool, 'disconnected': bool}}
+def init_db():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS pastes (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            content TEXT,
+            syntax_highlighting TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+connections = {}
 
 def handle_client(conn, addr):
     try:
@@ -59,7 +78,7 @@ def start_tcp_server(host='0.0.0.0', port=4096):
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((host, port))
     server.listen(31522)
-    print(f'[TCP] Servidor escutando em {host}:{port}')
+    print(f'[TCP] Server listening on {host}:{port}')
 
     while True:
         conn, addr = server.accept()
@@ -161,6 +180,121 @@ def disconnect():
         session.pop('conn_id', None)
     return 'OK', 200
 
+# SnakeBin
+# |
+@app.route('/')
+def index(): return render_template('index.html')
+# |
+@app.route('/create', methods=['POST'])
+def create_paste():
+    try:
+        title = request.form.get('title', 'Untitled')
+        content = request.form.get('content', '')
+        syntax = request.form.get('syntax', 'text')
+        
+        if not content.strip(): return jsonify({'error': 'Content cannot be empty'}), 400
+        
+        paste_id = str(uuid.uuid4())[:8]
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO pastes (id, title, content, syntax_highlighting) VALUES (?, ?, ?, ?)', (paste_id, title, content, syntax))
+        conn.commit()
+        conn.close()
+        
+        if request.headers.get('Content-Type') == 'application/json':
+            return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
+        
+        return redirect(url_for('view_paste', paste_id=paste_id))
+    except Exception as e: return jsonify({'error': str(e)}), 500
+# |
+@app.route('/<paste_id>')
+def view_paste(paste_id):
+    if len(paste_id) != 8: return render_template('error.html', error='Invalid paste ID'), 404
+    
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, content, syntax_highlighting, created_at FROM pastes WHERE id = ?', (paste_id,))
+    paste = cursor.fetchone()
+    conn.close()
+    
+    if not paste: return render_template('error.html', error='Paste not found'), 404
+    
+    paste_data = {
+        'id': paste[0],
+        'title': paste[1],
+        'content': paste[2],
+        'syntax': paste[3],
+        'created_at': paste[4]
+    }
+    
+    return render_template('view_paste.html', paste=paste_data)
+# |
+@app.route('/api/paste/<paste_id>', methods=['GET'])
+def api_get_paste(paste_id):
+    if len(paste_id) != 8:
+        return jsonify({'error': 'Invalid paste ID'}), 404
+    
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, content, syntax_highlighting, created_at FROM pastes WHERE id = ?', (paste_id,))
+    paste = cursor.fetchone()
+    conn.close()
+    
+    if not paste:
+        return jsonify({'error': 'Paste not found'}), 404
+    
+    return jsonify({
+        'id': paste[0],
+        'title': paste[1],
+        'content': paste[2],
+        'syntax': paste[3],
+        'created_at': paste[4]
+    })
+# |
+@app.route('/api/create', methods=['POST'])
+def api_create_paste():
+    try:
+        if request.is_json:
+            data = request.get_json()
+            title = data.get('title', 'Untitled')
+            content = data.get('content', '')
+            syntax = data.get('syntax', 'text')
+        else:
+            title = request.form.get('title', 'Untitled')
+            content = request.form.get('content', '')
+            syntax = request.form.get('syntax', 'text')
+        
+        if not content.strip():
+            return jsonify({'error': 'Content cannot be empty'}), 400
+        
+        paste_id = generate_paste_id()
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO pastes (id, title, content, syntax_highlighting) VALUES (?, ?, ?, ?)',
+            (paste_id, title, content, syntax)
+        )
+        conn.commit()
+        conn.close()
+        
+        return jsonify({
+            'id': paste_id,
+            'title': title,
+            'content': content,
+            'syntax': syntax,
+            'url': f'/{paste_id}'
+        })
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.errorhandler(404)
+def not_found(error):
+    return render_template('error.html', error='Page not found'), 404
+
+
 # Reader API
 # |
 @app.route("/api/json", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
@@ -189,6 +323,22 @@ def headers_plaintext():
     for key, value in request.headers.items():
         headers += f"{key}: {value}\n"
     return Response(headers, mimetype='text/plain')
+# |
+@app.route("/api/post", methods=["POST"])
+def post():
+    client_ip = request.remote_addr
+    client_port = request.environ.get("REMOTE_PORT")
+
+    body = request.get_data(as_text=True)
+
+    print("=" * 40)
+    print(f"📥 Connection from: {client_ip}:{client_port}")
+    print(f"📡 Path: {request.path}")
+    print(f"📦 Headers: {dict(request.headers)}")
+    print(f"📝 Payload:\n{body}")
+    print("=" * 40)
+
+    return f"POST received with sucess!\nContent: {body}\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 # OpenTTY WebSite API
 # |
@@ -206,22 +356,7 @@ def get_downloads():
 def get_news():
     data = load_versions()
     return jsonify(data.get("news", []))
-# |
-@app.route("/api/post", methods=["POST"])
-def post():
-    client_ip = request.remote_addr
-    client_port = request.environ.get("REMOTE_PORT")
 
-    body = request.get_data(as_text=True)
-
-    print("=" * 40)
-    print(f"📥 Connection from: {client_ip}:{client_port}")
-    print(f"📡 Path: {request.path}")
-    print(f"📦 Headers: {dict(request.headers)}")
-    print(f"📝 Payload:\n{body}")
-    print("=" * 40)
-
-    return f"POST received with sucess!\nContent: {body}\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
 
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
