@@ -183,7 +183,7 @@ def disconnect():
 # SnakeBin
 # |
 @app.route('/')
-def index(): return render_template('index.html')
+def snakebin(): return render_template('index.html')
 # |
 @app.route('/create', methods=['POST'])
 def create_paste():
