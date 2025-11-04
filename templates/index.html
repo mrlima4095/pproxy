@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Create New Paste - SnakeBin{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="paste-form">
+            <h2 class="text-center mb-4">Create New Paste</h2>
+            
+            <form id="pasteForm" action="{{ url_for('create_paste') }}" method="POST">
+                <div class="mb-3">
+                    <label for="title" class="form-label">Paste Title</label>
+                    <input type="text" class="form-control" id="title" name="title" placeholder="Untitled" maxlength="100">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="syntax" class="form-label">Syntax Highlighting</label>
+                    <select class="form-select syntax-select" id="syntax" name="syntax">
+                        <option value="text">None</option>
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="php">PHP</option>
+                        <option value="sql">SQL</option>
+                        <option value="bash">Bash</option>
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="content" class="form-label">Paste Content</label>
+                    <textarea class="form-control paste-content" id="content" name="content" 
+                              placeholder="Paste your code or text here..." required></textarea>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary">Create Paste</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="mt-4">
+            <h4>About SnakeBin</h4>
+            <p>SnakeBin is a simple pastebin service where you can store and share text and code snippets.</p>
+            <p>All pastes are public and can be accessed via their unique 8-character ID.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
