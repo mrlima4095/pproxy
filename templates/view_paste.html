@@ -15,7 +15,12 @@
                     <small class="text-muted">
                         Paste ID: {{ paste.id }} | 
                         Created: {{ paste.created_at }} |
-                        <a href="{{ url_for('index') }}">Create New</a>
+                        {% if paste.expires_at %}
+                            Expires: {{ paste.expires_at }}
+                        {% else %}
+                            Never expires
+                        {% endif %}
+                        | <a href="{{ url_for('snakebin') }}">Create New</a>
                     </small>
                 </div>
                 
@@ -33,7 +38,7 @@
         </div>
         
         <div class="mt-3 text-center">
-            <a href="{{ url_for('index') }}" class="btn btn-primary">Create New Paste</a>
+            <a href="{{ url_for('snakebin') }}" class="btn btn-primary">Create New Paste</a>
         </div>
     </div>
 </div>
@@ -41,18 +46,18 @@
 
 {% block scripts %}
 <script>
-function copyUrl() {
-    const urlInput = document.getElementById('pasteUrl');
-    urlInput.select();
-    urlInput.setSelectionRange(0, 99999);
-    document.execCommand('copy');
-    
-    const button = event.target;
-    const originalText = button.textContent;
-    button.textContent = 'Copied!';
-    setTimeout(() => {
-        button.textContent = originalText;
-    }, 2000);
-}
+    function copyUrl() {
+        const urlInput = document.getElementById('pasteUrl');
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = 'Copied!';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2000);
+    }
 </script>
 {% endblock %}
