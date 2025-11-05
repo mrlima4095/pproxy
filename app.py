@@ -18,7 +18,7 @@ CORS(app)
 def init_db():
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
-    cursor.execute('''
+    cursor.execute(''' 
         CREATE TABLE IF NOT EXISTS pastes (
             id TEXT PRIMARY KEY,
             title TEXT,
@@ -225,8 +225,7 @@ def view_paste(paste_id):
 # |
 @app.route('/api/paste/<paste_id>', methods=['GET'])
 def api_get_paste(paste_id):
-    if len(paste_id) != 8:
-        return jsonify({'error': 'Invalid paste ID'}), 404
+    if len(paste_id) != 8: return jsonify({'error': 'Invalid paste ID'}), 404
     
     conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
@@ -234,16 +233,9 @@ def api_get_paste(paste_id):
     paste = cursor.fetchone()
     conn.close()
     
-    if not paste:
-        return jsonify({'error': 'Paste not found'}), 404
+    if not paste: return jsonify({'error': 'Paste not found'}), 404
     
-    return jsonify({
-        'id': paste[0],
-        'title': paste[1],
-        'content': paste[2],
-        'syntax': paste[3],
-        'created_at': paste[4]
-    })
+    return jsonify({ 'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'created_at': paste[4] })
 # |
 @app.route('/api/create', methods=['POST'])
 def api_create_paste():
@@ -271,19 +263,11 @@ def api_create_paste():
         conn.commit()
         conn.close()
         
-        return jsonify({
-            'id': paste_id,
-            'title': title,
-            'content': content,
-            'syntax': syntax,
-            'url': f'/{paste_id}'
-        })
-    
+        return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
     except Exception as e: return jsonify({'error': str(e)}), 500
 
 @app.errorhandler(404)
 def not_found(error): return render_template('error.html', error='Page not found'), 404
-
 
 # Reader API
 # |
