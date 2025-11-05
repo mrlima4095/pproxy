@@ -93,7 +93,7 @@ def load_versions():
 # WebProxy
 # |
 @app.route('/cli/')
-def index(): return render_template('login.html')
+def webproxy(): return render_template('login.html')
 # |
 @app.route('/cli/login', methods=['POST'])
 def login():
