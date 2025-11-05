@@ -82,97 +82,6 @@ def load_versions():
             return json.load(f)
     return {"downloads": [], "news": []}
 
-# SnakeBin
-# |
-@app.route('/')
-def snakebin(): return render_template('index.html')
-# |
-@app.route('/create', methods=['POST'])
-def create_paste():
-    try:
-        title = request.form.get('title', 'Untitled')
-        content = request.form.get('content', '')
-        syntax = request.form.get('syntax', 'text')
-        
-        if not content.strip(): return jsonify({'error': 'Content cannot be empty'}), 400
-        
-        paste_id = str(uuid.uuid4())[:8]
-        
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute('INSERT INTO pastes (id, title, content, syntax_highlighting) VALUES (?, ?, ?, ?)', (paste_id, title, content, syntax))
-        conn.commit()
-        conn.close()
-        
-        if request.headers.get('Content-Type') == 'application/json': return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
-        
-        return redirect(url_for('view_paste', paste_id=paste_id))
-    except Exception as e: return jsonify({'error': str(e)}), 500
-# |
-@app.route('/<paste_id>')
-def view_paste(paste_id):
-    if len(paste_id) != 8: return render_template('error.html', error='Invalid paste ID'), 404
-    
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute('SELECT id, title, content, syntax_highlighting, created_at FROM pastes WHERE id = ?', (paste_id,))
-    paste = cursor.fetchone()
-    conn.close()
-    
-    if not paste: return render_template('error.html', error='Paste not found'), 404
-    
-    paste_data = { 'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'created_at': paste[4] }
-    
-    return render_template('view_paste.html', paste=paste_data)
-# |
-@app.route('/api/paste/<paste_id>', methods=['GET'])
-def api_get_paste(paste_id):
-    if len(paste_id) != 8: return jsonify({'error': 'Invalid paste ID'}), 404
-    
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute('SELECT id, title, content, syntax_highlighting, created_at FROM pastes WHERE id = ?', (paste_id,))
-    paste = cursor.fetchone()
-    conn.close()
-    
-    if not paste: return jsonify({'error': 'Paste not found'}), 404
-    
-    return jsonify({ 'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'created_at': paste[4] })
-# |
-@app.route('/api/create', methods=['POST'])
-def api_create_paste():
-    try:
-        if request.is_json:
-            data = request.get_json()
-            title = data.get('title', 'Untitled')
-            content = data.get('content', '')
-            syntax = data.get('syntax', 'text')
-        else:
-            title = request.form.get('title', 'Untitled')
-            content = request.form.get('content', '')
-            syntax = request.form.get('syntax', 'text')
-        
-        if not content.strip(): return jsonify({'error': 'Content cannot be empty'}), 400
-        
-        paste_id = generate_paste_id()
-        
-        conn = sqlite3.connect(DATABASE)
-        cursor = conn.cursor()
-        cursor.execute(
-            'INSERT INTO pastes (id, title, content, syntax_highlighting) VALUES (?, ?, ?, ?)',
-            (paste_id, title, content, syntax)
-        )
-        conn.commit()
-        conn.close()
-        
-        return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
-    except Exception as e: return jsonify({'error': str(e)}), 500
-# |
-# 404 - Paste not found
-@app.errorhandler(404)
-def not_found(error): return render_template('error.html', error='Page not found'), 404
-
-
 # WebProxy
 # |
 @app.route('/cli/')
@@ -262,6 +171,96 @@ def disconnect():
             
         session.pop('conn_id', None)
     return 'OK', 200
+
+# SnakeBin
+# |
+@app.route('/')
+def index(): return render_template('index.html')
+# |
+@app.route('/create', methods=['POST'])
+def create_paste():
+    try:
+        title = request.form.get('title', 'Untitled')
+        content = request.form.get('content', '')
+        syntax = request.form.get('syntax', 'text')
+        
+        if not content.strip(): return jsonify({'error': 'Content cannot be empty'}), 400
+        
+        paste_id = str(uuid.uuid4())[:8]
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO pastes (id, title, content, syntax_highlighting) VALUES (?, ?, ?, ?)', (paste_id, title, content, syntax))
+        conn.commit()
+        conn.close()
+        
+        if request.headers.get('Content-Type') == 'application/json': return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
+        
+        return redirect(url_for('view_paste', paste_id=paste_id))
+    except Exception as e: return jsonify({'error': str(e)}), 500
+# |
+@app.route('/<paste_id>')
+def view_paste(paste_id):
+    if len(paste_id) != 8: return render_template('error.html', error='Invalid paste ID'), 404
+    
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, content, syntax_highlighting, created_at FROM pastes WHERE id = ?', (paste_id,))
+    paste = cursor.fetchone()
+    conn.close()
+    
+    if not paste: return render_template('error.html', error='Paste not found'), 404
+    
+    paste_data = { 'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'created_at': paste[4] }
+    
+    return render_template('view_paste.html', paste=paste_data)
+# |
+@app.route('/api/paste/<paste_id>', methods=['GET'])
+def api_get_paste(paste_id):
+    if len(paste_id) != 8: return jsonify({'error': 'Invalid paste ID'}), 404
+    
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, title, content, syntax_highlighting, created_at FROM pastes WHERE id = ?', (paste_id,))
+    paste = cursor.fetchone()
+    conn.close()
+    
+    if not paste: return jsonify({'error': 'Paste not found'}), 404
+    
+    return jsonify({ 'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'created_at': paste[4] })
+# |
+@app.route('/api/create', methods=['POST'])
+def api_create_paste():
+    try:
+        if request.is_json:
+            data = request.get_json()
+            title = data.get('title', 'Untitled')
+            content = data.get('content', '')
+            syntax = data.get('syntax', 'text')
+        else:
+            title = request.form.get('title', 'Untitled')
+            content = request.form.get('content', '')
+            syntax = request.form.get('syntax', 'text')
+        
+        if not content.strip(): return jsonify({'error': 'Content cannot be empty'}), 400
+        
+        paste_id = generate_paste_id()
+        
+        conn = sqlite3.connect(DATABASE)
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO pastes (id, title, content, syntax_highlighting) VALUES (?, ?, ?, ?)',
+            (paste_id, title, content, syntax)
+        )
+        conn.commit()
+        conn.close()
+        
+        return jsonify({ 'id': paste_id, 'title': title, 'content': content, 'syntax': syntax, 'url': f'/{paste_id}' })
+    except Exception as e: return jsonify({'error': str(e)}), 500
+# |
+# 404 - Paste not found
+@app.errorhandler(404)
+def not_found(error): return render_template('error.html', error='Page not found'), 404
 
 # Reader API
 # |
