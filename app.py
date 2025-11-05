@@ -82,96 +82,6 @@ def load_versions():
             return json.load(f)
     return {"downloads": [], "news": []}
 
-# WebProxy
-# |
-@app.route('/cli/')
-def webproxy(): return render_template('login.html')
-# |
-@app.route('/cli/login', methods=['POST'])
-def login():
-    conn_id = request.form['conn_id']
-    password = request.form['password']
-
-    conn_data = connections.get(conn_id)
-
-    errors = []
-    if not conn_data: errors.append("Invalid ID")
-    if conn_data['password'] != password: errors.append("Invalid password")
-    if conn_data['in_use']: errors.append("Busy session")
-    if conn_data.get('disconnected', False): errors.append("Connection closed")
-
-    if errors: return render_template("login.html", errors=errors)
-
-    conn_data['in_use'] = True
-    session['conn_id'] = conn_id
-    return redirect(url_for('terminal'))
-# |
-@app.route('/cli/terminal')
-def terminal():
-    if 'conn_id' not in session: return redirect('/cli/')
-    return render_template('terminal.html')
-# |
-@app.route('/cli/send', methods=['POST'])
-def send_command():
-    if 'conn_id' not in session: return 'Unauthorized', 401
-
-    conn_id = session['conn_id']
-    data = request.json
-    command = data.get('command', '')
-
-    conn_data = connections.get(conn_id)
-    if not conn_data: return 'Invalid session', 400 
-    if conn_data.get('disconnected', False): return 'Connection closed', 400
-
-    try:
-        conn_data['conn'].sendall((command + '\n').encode())
-        print(f'[FLASK] Comando enviado para {conn_id}: {command}')
-        return 'Enviado', 200
-    except Exception as e:
-        print(f'[FLASK] Erro ao enviar comando: {e}')
-        return f'Erro: {e}', 500
-# |
-@app.route('/cli/receive')
-def receive_data():
-    if 'conn_id' not in session: return 'Unauthorized', 401
-
-    conn_id = session['conn_id']
-    conn_data = connections.get(conn_id)
-
-    if not conn_data or conn_data.get('disconnected', False): return jsonify({'output': '', 'redirect': '/cli/'}) 
-
-    start = time.time()
-    while time.time() - start < 25:
-        output = conn_data['buffer']
-        if output:
-            conn_data['buffer'] = ''
-            return jsonify({'output': output})
-        time.sleep(0.2)
-
-    return jsonify({'output': ''})
-# |
-@app.route('/cli/session')
-def get_session():
-    if 'conn_id' not in session: return jsonify({"active": False}), 401
-
-    conn_id = session['conn_id']
-    conn_data = connections.get(conn_id)
-    if not conn_data or conn_data.get('disconnected', False): return jsonify({"active": False}), 400
-
-    return jsonify({"active": True, "id": conn_id})
-# |
-@app.route('/cli/disconnect', methods=['POST'])
-def disconnect():
-    conn_id = session.get('conn_id')
-    if conn_id:
-        conn_data = connections.get(conn_id)
-        if conn_data:
-            conn_data['in_use'] = False
-            conn_data['disconnected'] = False
-            
-        session.pop('conn_id', None)
-    return 'OK', 200
-
 # SnakeBin
 # |
 @app.route('/')
@@ -261,6 +171,97 @@ def api_create_paste():
 # 404 - Paste not found
 @app.errorhandler(404)
 def not_found(error): return render_template('error.html', error='Page not found'), 404
+
+
+# WebProxy
+# |
+@app.route('/cli/')
+def webproxy(): return render_template('login.html')
+# |
+@app.route('/cli/login', methods=['POST'])
+def login():
+    conn_id = request.form['conn_id']
+    password = request.form['password']
+
+    conn_data = connections.get(conn_id)
+
+    errors = []
+    if not conn_data: errors.append("Invalid ID")
+    if conn_data['password'] != password: errors.append("Invalid password")
+    if conn_data['in_use']: errors.append("Busy session")
+    if conn_data.get('disconnected', False): errors.append("Connection closed")
+
+    if errors: return render_template("login.html", errors=errors)
+
+    conn_data['in_use'] = True
+    session['conn_id'] = conn_id
+    return redirect(url_for('terminal'))
+# |
+@app.route('/cli/terminal')
+def terminal():
+    if 'conn_id' not in session: return redirect('/cli/')
+    return render_template('terminal.html')
+# |
+@app.route('/cli/send', methods=['POST'])
+def send_command():
+    if 'conn_id' not in session: return 'Unauthorized', 401
+
+    conn_id = session['conn_id']
+    data = request.json
+    command = data.get('command', '')
+
+    conn_data = connections.get(conn_id)
+    if not conn_data: return 'Invalid session', 400 
+    if conn_data.get('disconnected', False): return 'Connection closed', 400
+
+    try:
+        conn_data['conn'].sendall((command + '\n').encode())
+        print(f'[FLASK] Comando enviado para {conn_id}: {command}')
+        return 'Enviado', 200
+    except Exception as e:
+        print(f'[FLASK] Erro ao enviar comando: {e}')
+        return f'Erro: {e}', 500
+# |
+@app.route('/cli/receive')
+def receive_data():
+    if 'conn_id' not in session: return 'Unauthorized', 401
+
+    conn_id = session['conn_id']
+    conn_data = connections.get(conn_id)
+
+    if not conn_data or conn_data.get('disconnected', False): return jsonify({'output': '', 'redirect': '/cli/'}) 
+
+    start = time.time()
+    while time.time() - start < 25:
+        output = conn_data['buffer']
+        if output:
+            conn_data['buffer'] = ''
+            return jsonify({'output': output})
+        time.sleep(0.2)
+
+    return jsonify({'output': ''})
+# |
+@app.route('/cli/session')
+def get_session():
+    if 'conn_id' not in session: return jsonify({"active": False}), 401
+
+    conn_id = session['conn_id']
+    conn_data = connections.get(conn_id)
+    if not conn_data or conn_data.get('disconnected', False): return jsonify({"active": False}), 400
+
+    return jsonify({"active": True, "id": conn_id})
+# |
+@app.route('/cli/disconnect', methods=['POST'])
+def disconnect():
+    conn_id = session.get('conn_id')
+    if conn_id:
+        conn_data = connections.get(conn_id)
+        if conn_data:
+            conn_data['in_use'] = False
+            conn_data['disconnected'] = False
+            
+        session.pop('conn_id', None)
+    return 'OK', 200
 
 # Reader API
 # |
