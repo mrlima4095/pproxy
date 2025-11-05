@@ -30,7 +30,7 @@ connections = {}
 
 def handle_client(conn, addr):
     try:
-        print(f'[TCP] Nova conexão de {addr}')
+        print(f'[TCP] New connection from {addr}')
         conn.sendall(b'Password: ')
         password = conn.recv(1024).decode().strip()
 
