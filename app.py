@@ -219,13 +219,7 @@ def view_paste(paste_id):
     
     if not paste: return render_template('error.html', error='Paste not found'), 404
     
-    paste_data = {
-        'id': paste[0],
-        'title': paste[1],
-        'content': paste[2],
-        'syntax': paste[3],
-        'created_at': paste[4]
-    }
+    paste_data = { 'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'created_at': paste[4] }
     
     return render_template('view_paste.html', paste=paste_data)
 # |
@@ -264,8 +258,7 @@ def api_create_paste():
             content = request.form.get('content', '')
             syntax = request.form.get('syntax', 'text')
         
-        if not content.strip():
-            return jsonify({'error': 'Content cannot be empty'}), 400
+        if not content.strip(): return jsonify({'error': 'Content cannot be empty'}), 400
         
         paste_id = generate_paste_id()
         
@@ -286,8 +279,7 @@ def api_create_paste():
             'url': f'/{paste_id}'
         })
     
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    except Exception as e: return jsonify({'error': str(e)}), 500
 
 @app.errorhandler(404)
 def not_found(error): return render_template('error.html', error='Page not found'), 404
@@ -360,3 +352,4 @@ if __name__ == '__main__':
     init_db()
     threading.Thread(target=start_tcp_server, daemon=True).start()
     app.run(host='127.0.0.1', port=10141, debug=False, use_reloader=False)
+ 
