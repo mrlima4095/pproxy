@@ -744,7 +744,7 @@ document.addEventListener('click', function(e) {
 // View a specific paste
 async function viewPaste(pasteId) {
     try {
-        const response = await fetch(`/${pasteId}`);
+        const response = await fetch(`/api/paste/${pasteId}`);
         if (!response.ok) {
             throw new Error('Paste not found');
         }
