@@ -5,26 +5,18 @@ import socket
 import sqlite3
 import requests
 import threading
-import uuid, os, time, json, datetime
+import os, re, uuid, time, json, datetime
 from flask import Flask, Response, request, session, redirect, render_template, url_for, jsonify, render_template_string
 from flask_cors import CORS
 
 app = Flask(__name__)
-JSON_FILE = "/var/www/opentty/assets/root/web.json"
 app.secret_key = 'segredo_super_seguro'
 CORS(app)
 
-def get_expiration_date(expiration_option):
-    now = datetime.now()
-    
-    if expiration_option == 'never': return None
-    elif expiration_option == '5min': return now + timedelta(minutes=5)
-    elif expiration_option == '10min': return now + timedelta(minutes=10)
-    elif expiration_option == '1hour': return now + timedelta(hours=1)
-    elif expiration_option == '1day': return now + timedelta(days=1)
-    elif expiration_option == '1week': return now + timedelta(weeks=1) 
-    elif expiration_option == '1month': return now + timedelta(days=30)
-    else: return None
+DATABASE = 'app.db'
+JSON_FILE = "/var/www/opentty/assets/root/web.json"
+EXPIRATION_TIMES = { '5min': 5, '10min': 10, '1hour': 60, '1day': 1440, '1week': 10080, '2week': 20160, '1month': 43200, '6months': 259200, '1year': 525600 }
+
 
 connections = {}
 
@@ -169,6 +161,193 @@ def disconnect():
     return 'OK', 200
 
 
+# DeepBin
+# |
+# (Database)
+# | (Initalize SQLite table)
+def init_db():
+    conn = sqlite3.connect(DABASE)
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS pastes (id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL, syntax TEXT, expires DATETIME, unlisted BOOLEAN DEFAULT FALSE, created DATETIME DEFAULT CURRENT_TIMESTAMP)")
+    conn.commit()
+    conn.close()
+# |
+init_db()
+# |
+# (Utilities)
+# | (Get expiration date)
+def calculate_expiration(expires_str):
+    now = datetime.datetime.now()
+    
+    expires_map = {'never': None, '5min': datetime.timedelta(minutes=5), '10min': datetime.timedelta(minutes=10), '1hour': datetime.timedelta(hours=1), '1day': datetime.timedelta(days=1), '1week': datetime.timedelta(weeks=1), '2week': datetime.timedelta(weeks=2), '1month': datetime.timedelta(days=30), '6months': datetime.timedelta(days=180), '1year': datetime.timedelta(days=365)}
+    
+    if expires_str in expires_map:
+        if expires_str == 'never': return None
+
+        return now + expires_map[expires_str]
+    return now + datetime.timedelta(days=1)
+# | (Check if Paste is expired)
+def is_paste_expired(expires_datetime):
+    if expires_datetime is None: return False
+    
+    if isinstance(expires_datetime, str): expires_datetime = datetime.datetime.fromisoformat(expires_datetime)
+    
+    return datetime.datetime.now() > expires_datetime
+# |
+# | (Create Paste)
+def create_paste(title, content, syntax, expires, unlisted=False):
+    paste_id = str(uuid.uuid4())[:16] if unlisted else str(uuid.uuid4())[:8]
+    expires_dt = calculate_expiration(expires)
+    
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute("INSERT INTO pastes (id, title, content, syntax, expires, unlisted) VALUES (?, ?, ?, ?, ?, ?)", 
+                  (paste_id, title, content, syntax, expires_dt.isoformat() if expires_dt else None, unlisted))
+    
+    conn.commit()
+    conn.close()
+    
+    return paste_id
+# | (Get Paste)
+def get_paste(paste_id):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('SELECT * FROM pastes WHERE id = ?', (paste_id,))
+    paste = cursor.fetchone()
+    conn.close()
+    
+    if not paste: return None
+    
+    if paste[4] is not None and is_paste_expired(paste[4]):
+        delete_paste(paste_id)
+        return None
+    
+    return {'id': paste[0], 'title': paste[1], 'content': paste[2], 'syntax': paste[3], 'expires': paste[4], 'unlisted': bool(paste[5]), 'created': paste[6]}
+# | (Delete Paste)
+def delete_paste(paste_id):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM pastes WHERE id = ?', (paste_id,))
+    conn.commit()
+    conn.close()
+# |
+# (Flask API)
+# | (Main Page)
+@app.route('/')
+def index(): return render_template('index.html')
+# | (Create API)
+@app.route('/create', methods=['POST'])
+def create_paste_route():
+    data = request.get_json() if request.is_json else request.form
+    
+    title = data.get('title', 'Untitled')
+    content = data.get('content', '')
+    syntax = data.get('syntax', 'text')
+    expires = data.get('expires', '1day')
+    unlisted = data.get('unlisted', False)
+    
+    if not content: return jsonify({'error': 'Content is required'}), 400
+    
+    paste_id = create_paste(title, content, syntax, expires, unlisted)
+    
+    return jsonify({'success': True, 'paste_id': paste_id, 'url': f'/{paste_id}', 'unlisted': unlisted})
+# | (View Paste on Web)
+@app.route('/<paste_id>')
+def view_paste(paste_id):
+    password = request.args.get('password')
+    paste = get_paste(paste_id, password)
+    
+    if not paste: return jsonify({'error': 'Paste not found or expired'}), 404
+    
+    return jsonify(paste)
+# | (Read Paste)
+@app.route('/api/paste/<paste_id>')
+def api_paste_raw(paste_id):
+    password = request.args.get('password')
+    paste = get_paste(paste_id, password)
+    
+    if not paste: return 'Paste not found or expired', 404
+    
+    return paste['content']
+# |
+# (Socket)
+def handle_client_connection(client_socket):
+    try:
+        data = client_socket.recv(1024).decode('utf-8').strip()
+        parts = data.split(' ', 2)
+        
+        command = parts[0].upper()
+        
+        if command == 'READ':
+            if len(parts) < 2:
+                client_socket.send(b'ERROR 400 Missing paste ID')
+                return
+            
+            paste_id = parts[1]
+            password = parts[2] if len(parts) > 2 else None
+            
+            paste = get_paste(paste_id, password)
+            
+            if not paste: client_socket.send(b'ERROR 404 Paste not found or expired')
+            else: client_socket.send(paste['content'].encode('utf-8'))
+        elif command == 'INFO':
+            if len(parts) < 2:
+                client_socket.send(b'ERROR 400 Missing paste ID')
+                return
+            
+            paste_id = parts[1]
+            password = parts[2] if len(parts) > 2 else None
+            
+            paste = get_paste(paste_id, password)
+            
+            if not paste: client_socket.send(b'ERROR 404 Paste not found or expired')
+            else:
+                info_response = paste.copy()
+                del info_response['content']
+                client_socket.send(json.dumps(info_response).encode('utf-8'))
+        elif command == 'WRITE':
+            if len(parts) < 2:
+                client_socket.send(b'ERROR Missing JSON data')
+                return
+            
+            try:
+                json_data = json.loads(parts[1])
+                
+                title = json_data.get('title', 'Untitled')
+                content = json_data.get('content', '')
+                syntax = json_data.get('syntax', 'text')
+                expires = json_data.get('expires', '1day')
+                unlisted = json_data.get('unlisted', False)
+                
+                if not content:
+                    client_socket.send(b'ERROR 409 Content is required')
+                    return
+                
+                paste_id = create_paste(title, content, syntax, expires, unlisted)
+                
+                response = { 'success': True, 'paste_id': paste_id, 'url': f'/{paste_id}', 'unlisted': unlisted}
+                client_socket.send(json.dumps(response).encode('utf-8'))
+                
+            except json.JSONDecodeError: client_socket.send(b'ERROR 403 Invalid JSON')
+        else: client_socket.send(b'ERROR 404 Unknown command')
+    except Exception as e: client_socket.send(f'ERROR 500 {str(e)}'.encode('utf-8'))
+    finally: client_socket.close()
+# | (Run)
+def start_socket_server(host='0.0.0.0', port=31523):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server.bind((host, port))
+    server.listen(31522)
+    
+    print(f"[+] DeepBin listening on {host}:{port}")
+    
+    while True:
+        client_socket, addr = server_socket.accept()
+        print(f"Socket connection from {addr}")
+        client_thread = threading.Thread(target=handle_client_connection, args=(client_socket,), daemon=True).start()
+
 # Reader API
 # | (JSON)
 @app.route("/api/json", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
@@ -216,8 +395,6 @@ def get_news(): return jsonify(load_versions().get("news", []))
 
 
 if __name__ == '__main__':
-    init_db()
     threading.Thread(target=start_tcp_server, daemon=True).start()
-    threading.Thread(target=connect_snake_cli, daemon=True).start() 
+    threading.Thread(target=start_socket_server, daemon=True).start()
     app.run(host='127.0.0.1', port=10141, debug=False, use_reloader=False)
- 
