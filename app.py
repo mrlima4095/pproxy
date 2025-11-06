@@ -257,7 +257,7 @@ def create_paste_route():
 @app.route('/<paste_id>')
 def view_paste(paste_id):
     password = request.args.get('password')
-    paste = get_paste(paste_id, password)
+    paste = get_paste(paste_id)
     
     if not paste: return jsonify({'error': 'Paste not found or expired'}), 404
     
