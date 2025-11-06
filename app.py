@@ -208,5 +208,4 @@ def get_news(): return jsonify(load_versions().get("news", []))
 
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
-    threading.Thread(target=start_socket_server, daemon=True).start()
     app.run(host='127.0.0.1', port=10141, debug=False, use_reloader=False)
