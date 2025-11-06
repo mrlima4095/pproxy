@@ -1,990 +1,693 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeepBin - Secure Code Sharing</title>
+    <title>DeepBin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --neon-cyan: #00f3ff;
-            --neon-purple: #b967ff;
-            --neon-pink: #ff2a6d;
-            --dark-bg: #0a0a0f;
-            --darker-bg: #050508;
-            --terminal-green: #00ff41;
-            --mac-dock-bg: rgba(30, 30, 30, 0.8);
-        }
-        
         body {
-            background: linear-gradient(135deg, var(--dark-bg) 0%, var(--darker-bg) 100%);
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            color: #00ff00;
             font-family: 'Courier New', monospace;
             min-height: 100vh;
             overflow-x: hidden;
-            padding-bottom: 80px;
         }
-        
-        .window {
-            background: rgba(10, 10, 15, 0.95);
-            border: 2px solid var(--neon-cyan);
-            box-shadow: 0 0 20px var(--neon-cyan),
-                        inset 0 0 10px var(--neon-cyan);
-            border-radius: 8px;
-            margin-bottom: 20px;
-            position: relative;
+
+        .terminal-text {
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+        }
+
+        .glow-button {
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
             transition: all 0.3s ease;
         }
-        
+
+        .glow-button:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .desktop-icon {
+            width: 80px;
+            text-align: center;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .desktop-icon:hover {
+            transform: scale(1.1);
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .desktop-icon i {
+            font-size: 2rem;
+            margin-bottom: 5px;
+        }
+
+        .mac-bar {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #00ff00;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .window {
+            background: rgba(13, 17, 23, 0.95);
+            border: 1px solid #00ff00;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            position: absolute;
+            min-width: 500px;
+            min-height: 400px;
+        }
+
         .window-header {
-            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+            background: rgba(0, 255, 0, 0.1);
+            border-bottom: 1px solid #00ff00;
             padding: 8px 15px;
-            border-bottom: 2px solid var(--neon-cyan);
             cursor: move;
-            user-select: none;
+            border-radius: 8px 8px 0 0;
         }
-        
-        .window-title {
-            color: var(--dark-bg);
-            font-weight: bold;
-            font-size: 0.9rem;
-            margin: 0;
-        }
-        
+
         .window-controls {
             display: flex;
             gap: 8px;
         }
-        
-        .window-control {
+
+        .control-btn {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
         }
-        
-        .window-control.close {
-            background: #ff5f57;
-        }
-        
-        .window-control.minimize {
-            background: #ffbd2e;
-        }
-        
-        .window-control.maximize {
-            background: #28ca42;
-        }
-        
-        .window-control:hover {
-            transform: scale(1.1);
-            filter: brightness(1.2);
-        }
-        
-        .window-body {
+
+        .close { background: #ff5f57; }
+        .minimize { background: #ffbd2e; }
+        .maximize { background: #28ca42; }
+
+        .window-content {
             padding: 20px;
-            max-height: 600px;
+            height: calc(100% - 45px);
             overflow-y: auto;
         }
-        
-        .window.minimized {
-            height: auto !important;
-        }
-        
-        .window.minimized .window-body {
-            display: none;
-        }
-        
-        .window.hidden {
-            display: none;
-        }
-        
-        /* macOS Dock Style */
-        .mac-dock {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--mac-dock-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 10px 20px;
-            display: flex;
-            gap: 15px;
-            z-index: 1000;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        
-        .dock-item {
-            width: 50px;
-            height: 50px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: var(--neon-cyan);
-            font-size: 1.2rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-        }
-        
-        .dock-item:hover {
-            transform: translateY(-10px) scale(1.2);
-            background: var(--neon-cyan);
-            color: var(--dark-bg);
-            box-shadow: 0 0 20px var(--neon-cyan);
-        }
-        
-        .dock-item.active {
-            background: var(--neon-purple);
-            color: var(--dark-bg);
-            transform: translateY(-5px);
-            box-shadow: 0 0 15px var(--neon-purple);
-        }
-        
-        .neon-text {
-            color: var(--neon-cyan);
-            text-shadow: 0 0 10px var(--neon-cyan),
-                         0 0 20px var(--neon-cyan),
-                         0 0 30px var(--neon-cyan);
-        }
-        
-        .neon-title {
-            color: var(--neon-pink);
-            text-shadow: 0 0 10px var(--neon-pink),
-                         0 0 20px var(--neon-pink),
-                         0 0 30px var(--neon-pink);
-            font-weight: bold;
-            letter-spacing: 3px;
-        }
-        
-        .terminal-text {
-            color: var(--terminal-green);
-            font-family: 'Courier New', monospace;
-        }
-        
-        .glow-button {
-            background: transparent;
-            border: 2px solid var(--neon-purple);
-            color: var(--neon-purple);
-            padding: 10px 25px;
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .glow-button:hover {
-            background: var(--neon-purple);
-            color: var(--dark-bg);
-            box-shadow: 0 0 20px var(--neon-purple),
-                        0 0 40px var(--neon-purple);
-            transform: translateY(-2px);
-        }
-        
-        .matrix-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 80%, rgba(0, 243, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(185, 103, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(255, 42, 109, 0.05) 0%, transparent 50%);
-            z-index: -1;
-        }
-        
-        .scan-line {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
-            animation: scan 3s linear infinite;
-            z-index: 999;
-        }
-        
-        @keyframes scan {
-            0% { top: 0%; }
-            100% { top: 100%; }
-        }
-        
-        .form-control {
+
+        .form-control, .form-select {
             background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--neon-cyan);
-            color: var(--terminal-green);
-            font-family: 'Courier New', monospace;
+            border: 1px solid #00ff00;
+            color: #00ff00;
         }
-        
-        .form-control:focus {
+
+        .form-control:focus, .form-select:focus {
             background: rgba(0, 0, 0, 0.7);
-            border-color: var(--neon-purple);
-            box-shadow: 0 0 10px var(--neon-purple);
-            color: var(--terminal-green);
+            border-color: #00ff00;
+            color: #00ff00;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
         }
-        
-        .stats-counter {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--neon-pink);
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-item {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 5px;
-            padding: 15px;
-            text-align: center;
-        }
-        
-        .paste-item {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .paste-item:hover {
-            border-color: var(--neon-purple);
-            box-shadow: 0 0 10px var(--neon-purple);
-            transform: translateX(5px);
-        }
-        
+
         .paste-content {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 5px;
+            background: #000;
+            border: 1px solid #00ff00;
             padding: 15px;
+            border-radius: 5px;
             font-family: 'Courier New', monospace;
             white-space: pre-wrap;
             max-height: 400px;
             overflow-y: auto;
         }
-        
-        .search-box {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 25px;
-            padding: 10px 20px;
-            color: var(--terminal-green);
-            margin-bottom: 20px;
+
+        .syntax-badge {
+            background: rgba(0, 255, 0, 0.2);
+            border: 1px solid #00ff00;
+            color: #00ff00;
         }
-        
-        .search-box:focus {
-            outline: none;
-            border-color: var(--neon-purple);
-            box-shadow: 0 0 15px var(--neon-purple);
+
+        .search-result {
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-result:hover {
+            background: rgba(0, 255, 0, 0.1);
+            transform: translateX(5px);
         }
     </style>
 </head>
 <body>
-    <!-- Matrix Background Effects -->
-    <div class="matrix-bg"></div>
-    <div class="scan-line"></div>
-    
-    <!-- Main Container -->
-    <div class="container py-5">
-        <!-- Header -->
-        <div class="text-center mb-5">
-            <h1 class="neon-title display-3 mb-3">
-                <i class="fas fa-terminal me-3"></i>
-                DEEP<span class="neon-text">BIN</span>
-            </h1>
-            <p class="terminal-text lead" id="typing-subtitle">
-                <i class="fas fa-shield-alt me-2"></i>
-                SECURE CODE SHARING PLATFORM
-            </p>
+    <!-- Desktop Icons -->
+    <div class="container-fluid position-absolute" style="top: 20px; left: 20px;">
+        <div class="desktop-icon" onclick="openWindow('newPasteWindow')">
+            <i class="fas fa-plus"></i>
+            <div>New Paste</div>
         </div>
-
-        <!-- Stats Window -->
-        <div class="window" id="stats-window">
-            <div class="window-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="window-controls me-3">
-                        <button class="window-control minimize" data-window="stats"></button>
-                        <button class="window-control close" data-window="stats"></button>
-                    </div>
-                    <h6 class="window-title mb-0">
-                        <i class="fas fa-chart-bar me-2"></i>
-                        SYSTEM STATISTICS
-                    </h6>
-                </div>
-            </div>
-            <div class="window-body">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <i class="fas fa-code fa-2x neon-text mb-2"></i>
-                        <div class="stats-counter" id="pastesCount">0</div>
-                        <small class="terminal-text">ACTIVE PASTES</small>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-bolt fa-2x neon-text mb-2"></i>
-                        <div class="stats-counter" id="todayCount">0</div>
-                        <small class="terminal-text">TODAY</small>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-user-secret fa-2x neon-text mb-2"></i>
-                        <div class="stats-counter" id="unlistedCount">0</div>
-                        <small class="terminal-text">UNLISTED</small>
-                    </div>
-                    <div class="stat-item">
-                        <i class="fas fa-server fa-2x neon-text mb-2"></i>
-                        <div class="stats-counter" id="uptime">100%</div>
-                        <small class="terminal-text">UPTIME</small>
-                    </div>
-                </div>
-            </div>
+        <div class="desktop-icon" onclick="openWindow('searchWindow')">
+            <i class="fas fa-search"></i>
+            <div>Search</div>
         </div>
-
-        <!-- Create Paste Window -->
-        <div class="window" id="create-window">
-            <div class="window-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="window-controls me-3">
-                        <button class="window-control minimize" data-window="create"></button>
-                        <button class="window-control close" data-window="create"></button>
-                    </div>
-                    <h6 class="window-title mb-0">
-                        <i class="fas fa-plus-circle me-2"></i>
-                        CREATE NEW PASTE
-                    </h6>
-                </div>
-            </div>
-            <div class="window-body">
-                <form id="pasteForm">
-                    <div class="mb-3">
-                        <label class="form-label terminal-text">Title</label>
-                        <input type="text" class="form-control" id="title" placeholder="Untitled" value="Untitled">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label terminal-text">Content</label>
-                        <textarea class="form-control" id="content" rows="12" placeholder="Paste your code or text here..." required></textarea>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label terminal-text">Syntax</label>
-                                <select class="form-control" id="syntax">
-                                    <option value="text">Plain Text</option>
-                                    <option value="python">Python</option>
-                                    <option value="javascript">JavaScript</option>
-                                    <option value="html">HTML</option>
-                                    <option value="css">CSS</option>
-                                    <option value="java">Java</option>
-                                    <option value="cpp">C++</option>
-                                    <option value="php">PHP</option>
-                                    <option value="sql">SQL</option>
-                                    <option value="bash">Bash</option>
-                                    <option value="json">JSON</option>
-                                    <option value="xml">XML</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label terminal-text">Expiration</label>
-                                <select class="form-control" id="expires">
-                                    <option value="never">Never</option>
-                                    <option value="10min">10 Minutes</option>
-                                    <option value="1hour">1 Hour</option>
-                                    <option value="1day" selected>1 Day</option>
-                                    <option value="1week">1 Week</option>
-                                    <option value="2week">2 Weeks</option>
-                                    <option value="1month">1 Month</option>
-                                    <option value="1year">1 Year</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="unlisted">
-                        <label class="form-check-label terminal-text" for="unlisted">
-                            <i class="fas fa-eye-slash me-1"></i>
-                            Unlisted (Hidden from public listings)
-                        </label>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <button type="reset" class="btn glow-button me-md-2">
-                            <i class="fas fa-undo me-1"></i>
-                            Clear
-                        </button>
-                        <button type="submit" class="btn glow-button">
-                            <i class="fas fa-paper-plane me-1"></i>
-                            Create Paste
-                        </button>
-                    </div>
-                </form>
-            </div>
+        <div class="desktop-icon" onclick="openWindow('viewWindow')">
+            <i class="fas fa-eye"></i>
+            <div>View</div>
         </div>
+    </div>
 
-        <!-- Search Window -->
-        <div class="window hidden" id="search-window">
-            <div class="window-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="window-controls me-3">
-                        <button class="window-control minimize" data-window="search"></button>
-                        <button class="window-control close" data-window="search"></button>
-                    </div>
-                    <h6 class="window-title mb-0">
-                        <i class="fas fa-search me-2"></i>
-                        SEARCH PASTES
-                    </h6>
-                </div>
-            </div>
-            <div class="window-body">
-                <div class="row mb-4">
-                    <div class="col-md-8">
-                        <input type="text" class="form-control search-box" id="searchQuery" placeholder="Search pastes...">
-                    </div>
-                    <div class="col-md-4">
-                        <select class="form-control" id="searchSyntax">
-                            <option value="">All Syntax</option>
-                            <option value="text">Plain Text</option>
-                            <option value="python">Python</option>
-                            <option value="javascript">JavaScript</option>
-                            <option value="html">HTML</option>
-                            <option value="css">CSS</option>
-                            <option value="java">Java</option>
-                            <option value="cpp">C++</option>
-                            <option value="php">PHP</option>
-                            <option value="sql">SQL</option>
-                            <option value="bash">Bash</option>
-                            <option value="json">JSON</option>
-                            <option value="xml">XML</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="searchResults"></div>
-            </div>
-        </div>
-
-        <!-- View Paste Window -->
-        <div class="window hidden" id="view-window">
-            <div class="window-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="window-controls me-3">
-                        <button class="window-control minimize" data-window="view"></button>
-                        <button class="window-control close" data-window="view"></button>
-                    </div>
-                    <h6 class="window-title mb-0">
-                        <i class="fas fa-eye me-2"></i>
-                        VIEW PASTE
-                    </h6>
-                </div>
-            </div>
-            <div class="window-body">
-                <div id="pasteViewer">
-                    <div class="text-center terminal-text">
-                        <i class="fas fa-code fa-3x mb-3"></i>
-                        <p>Select a paste to view its content</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- API Docs Window -->
-        <div class="window hidden" id="api-window">
-            <div class="window-header d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <div class="window-controls me-3">
-                        <button class="window-control close" data-window="api"></button>
-                    </div>
-                    <h6 class="window-title mb-0">
-                        <i class="fas fa-code-branch me-2"></i>
-                        API DOCUMENTATION
-                    </h6>
-                </div>
-            </div>
-            <div class="window-body">
-                <div class="terminal-text">
-                    <h5 class="neon-text mb-3">HTTP API</h5>
-                    <p><strong>Create Paste:</strong> POST /create</p>
-                    <code class="d-block mb-3 p-2 bg-dark rounded">
-                        curl -X POST http://localhost:10141/create \<br>
-                        -H "Content-Type: application/json" \<br>
-                        -d '{"title":"Test","content":"Hello World","syntax":"text","expires":"1day"}'
-                    </code>
-                    
-                    <p><strong>Get Paste:</strong> GET /api/paste/[PASTE_ID]</p>
-                    <p><strong>View Paste:</strong> GET /[PASTE_ID]</p>
-                    
-                    <h5 class="neon-text mt-4 mb-3">Socket API</h5>
-                    <p><strong>Connect:</strong> telnet localhost 31523</p>
-                    <p><strong>Commands:</strong></p>
-                    <ul>
-                        <li>READ [PASTE_ID]</li>
-                        <li>INFO [PASTE_ID]</li>
-                        <li>WRITE {json_data}</li>
-                    </ul>
-                    <code class="d-block mt-2 p-2 bg-dark rounded">
-                        echo 'WRITE {"title":"Test","content":"Hello World","syntax":"text","expires":"1day"}' | nc localhost 31523
-                    </code>
+    <!-- Mac-style Bottom Bar -->
+    <div class="mac-bar">
+        <div class="container">
+            <div class="d-flex justify-content-center py-2">
+                <div class="d-flex gap-4">
+                    <button class="btn text-success border-0" onclick="openWindow('newPasteWindow')">
+                        <i class="fas fa-plus fa-lg"></i>
+                    </button>
+                    <button class="btn text-success border-0" onclick="openWindow('searchWindow')">
+                        <i class="fas fa-search fa-lg"></i>
+                    </button>
+                    <button class="btn text-success border-0" onclick="openWindow('viewWindow')">
+                        <i class="fas fa-eye fa-lg"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- macOS Dock -->
-    <div class="mac-dock">
-        <div class="dock-item active" data-window="create" title="New Paste">
-            <i class="fas fa-plus"></i>
+    <!-- New Paste Window -->
+    <div id="newPasteWindow" class="window" style="top: 100px; left: 200px; width: 700px; height: 700px;">
+        <div class="window-header d-flex justify-content-between align-items-center">
+            <div class="window-controls">
+                <button class="control-btn close" onclick="closeWindow('newPasteWindow')"></button>
+                <button class="control-btn minimize" onclick="minimizeWindow('newPasteWindow')"></button>
+                <button class="control-btn maximize" onclick="maximizeWindow('newPasteWindow')"></button>
+            </div>
+            <span class="terminal-text">New Paste - DeepBin</span>
+            <div style="width: 60px;"></div>
         </div>
-        <div class="dock-item" data-window="search" title="Search Pastes">
-            <i class="fas fa-search"></i>
+        <div class="window-content">
+            <form id="pasteForm">
+                <div class="mb-3">
+                    <label class="form-label terminal-text">Title</label>
+                    <input type="text" class="form-control" id="title" placeholder="Untitled" value="Untitled">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label terminal-text">Content</label>
+                    <textarea class="form-control" id="content" rows="12" placeholder="Paste your code or text here..." required></textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label terminal-text">Syntax</label>
+                            <select class="form-control" id="syntax">
+                                <option value="text">Plain Text</option>
+                                <option value="python">Python</option>
+                                <option value="javascript">JavaScript</option>
+                                <option value="html">HTML</option>
+                                <option value="css">CSS</option>
+                                <option value="java">Java</option>
+                                <option value="cpp">C++</option>
+                                <option value="php">PHP</option>
+                                <option value="sql">SQL</option>
+                                <option value="bash">Bash</option>
+                                <option value="json">JSON</option>
+                                <option value="xml">XML</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label terminal-text">Expiration</label>
+                            <select class="form-control" id="expires">
+                                <option value="never">Never</option>
+                                <option value="10min">10 Minutes</option>
+                                <option value="1hour">1 Hour</option>
+                                <option value="1day" selected>1 Day</option>
+                                <option value="1week">1 Week</option>
+                                <option value="2week">2 Weeks</option>
+                                <option value="1month">1 Month</option>
+                                <option value="1year">1 Year</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="unlisted">
+                    <label class="form-check-label terminal-text" for="unlisted">
+                        <i class="fas fa-eye-slash me-1"></i>
+                        Unlisted (Hidden from public listings)
+                    </label>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="reset" class="btn glow-button me-md-2">
+                        <i class="fas fa-undo me-1"></i>
+                        Clear
+                    </button>
+                    <button type="submit" class="btn glow-button">
+                        <i class="fas fa-paper-plane me-1"></i>
+                        Create Paste
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="dock-item" data-window="view" title="View Paste">
-            <i class="fas fa-eye"></i>
+    </div>
+
+    <!-- Search Window -->
+    <div id="searchWindow" class="window" style="top: 150px; left: 300px; width: 800px; height: 600px; display: none;">
+        <div class="window-header d-flex justify-content-between align-items-center">
+            <div class="window-controls">
+                <button class="control-btn close" onclick="closeWindow('searchWindow')"></button>
+                <button class="control-btn minimize" onclick="minimizeWindow('searchWindow')"></button>
+                <button class="control-btn maximize" onclick="maximizeWindow('searchWindow')"></button>
+            </div>
+            <span class="terminal-text">Search Pastes - DeepBin</span>
+            <div style="width: 60px;"></div>
         </div>
-        <div class="dock-item" data-window="api" title="API Docs">
-            <i class="fas fa-code"></i>
+        <div class="window-content">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search pastes...">
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" id="syntaxFilter">
+                        <option value="">All Syntax</option>
+                        <option value="text">Plain Text</option>
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="php">PHP</option>
+                        <option value="sql">SQL</option>
+                        <option value="bash">Bash</option>
+                        <option value="json">JSON</option>
+                        <option value="xml">XML</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-control" id="sortOrder">
+                        <option value="newest">Newest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn glow-button mb-3" onclick="loadPublicPastes()">
+                <i class="fas fa-sync me-1"></i>
+                Refresh
+            </button>
+            <div id="searchResults"></div>
         </div>
-        <div class="dock-item" data-window="stats" title="Statistics">
-            <i class="fas fa-chart-bar"></i>
+    </div>
+
+    <!-- View Window -->
+    <div id="viewWindow" class="window" style="top: 200px; left: 400px; width: 700px; height: 500px; display: none;">
+        <div class="window-header d-flex justify-content-between align-items-center">
+            <div class="window-controls">
+                <button class="control-btn close" onclick="closeWindow('viewWindow')"></button>
+                <button class="control-btn minimize" onclick="minimizeWindow('viewWindow')"></button>
+                <button class="control-btn maximize" onclick="maximizeWindow('viewWindow')"></button>
+            </div>
+            <span class="terminal-text">View Paste - DeepBin</span>
+            <div style="width: 60px;"></div>
+        </div>
+        <div class="window-content">
+            <div id="viewPasteForm" class="mb-3">
+                <div class="input-group">
+                    <input type="text" class="form-control" id="pasteIdInput" placeholder="Enter Paste ID">
+                    <button class="btn glow-button" onclick="loadPasteById()">
+                        <i class="fas fa-eye me-1"></i>
+                        View
+                    </button>
+                </div>
+            </div>
+            <div id="pasteViewContent" style="display: none;">
+                <h4 class="terminal-text" id="pasteTitle"></h4>
+                <div class="d-flex gap-2 mb-3">
+                    <span class="badge syntax-badge" id="pasteSyntax"></span>
+                    <span class="badge syntax-badge" id="pasteCreated"></span>
+                </div>
+                <div class="paste-content" id="pasteContent"></div>
+                <button class="btn glow-button mt-3" onclick="copyPasteContent()">
+                    <i class="fas fa-copy me-1"></i>
+                    Copy Content
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Paste View Window -->
+    <div id="currentPasteWindow" class="window" style="top: 120px; left: 500px; width: 750px; height: 650px; display: none;">
+        <div class="window-header d-flex justify-content-between align-items-center">
+            <div class="window-controls">
+                <button class="control-btn close" onclick="closeWindow('currentPasteWindow')"></button>
+                <button class="control-btn minimize" onclick="minimizeWindow('currentPasteWindow')"></button>
+                <button class="control-btn maximize" onclick="maximizeWindow('currentPasteWindow')"></button>
+            </div>
+            <span class="terminal-text" id="currentPasteTitle">Paste View - DeepBin</span>
+            <div style="width: 60px;"></div>
+        </div>
+        <div class="window-content">
+            <div class="d-flex gap-2 mb-3">
+                <span class="badge syntax-badge" id="currentPasteSyntax"></span>
+                <span class="badge syntax-badge" id="currentPasteCreated"></span>
+                <span class="badge syntax-badge" id="currentPasteExpires"></span>
+            </div>
+            <div class="paste-content" id="currentPasteContent" style="max-height: 500px;"></div>
+            <div class="mt-3">
+                <button class="btn glow-button me-2" onclick="copyPasteContent()">
+                    <i class="fas fa-copy me-1"></i>
+                    Copy Content
+                </button>
+                <button class="btn glow-button" onclick="sharePaste()">
+                    <i class="fas fa-share me-1"></i>
+                    Share URL
+                </button>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Application State
-let appState = {
-    currentWindow: 'create',
-    publicPastes: [],
-    currentPaste: null
-};
+        // Window management
+        function openWindow(windowId) {
+            document.getElementById(windowId).style.display = 'block';
+            bringToFront(windowId);
+        }
 
-// Window management system
-class WindowManager {
-    constructor() {
-        this.minimizedWindows = [];
-    }
-    
-    showWindow(windowId) {
-        // Hide all windows
-        document.querySelectorAll('.window').forEach(window => {
-            window.classList.add('hidden');
-        });
-        
-        // Show selected window
-        const window = document.getElementById(`${windowId}-window`);
-        if (window) {
-            window.classList.remove('hidden');
-            window.classList.remove('minimized');
+        function closeWindow(windowId) {
+            document.getElementById(windowId).style.display = 'none';
         }
-        
-        // Update dock active state
-        document.querySelectorAll('.dock-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        const activeDockItem = document.querySelector(`.dock-item[data-window="${windowId}"]`);
-        if (activeDockItem) {
-            activeDockItem.classList.add('active');
+
+        function minimizeWindow(windowId) {
+            const window = document.getElementById(windowId);
+            window.style.display = 'none';
         }
-        
-        appState.currentWindow = windowId;
-        
-        // Load data if needed
-        if (windowId === 'search') {
-            this.loadPublicPastes();
-        }
-    }
-    
-    minimize(windowId) {
-        const window = document.getElementById(`${windowId}-window`);
-        if (window) {
-            window.classList.add('minimized');
-        }
-    }
-    
-    close(windowId) {
-        const window = document.getElementById(`${windowId}-window`);
-        if (window) {
-            window.classList.add('hidden');
-        }
-    }
-    
-    async loadPublicPastes() {
-        try {
-            const response = await fetch('/api/public-pastes');
-            if (response.ok) {
-                appState.publicPastes = await response.json();
-                this.displaySearchResults(appState.publicPastes);
+
+        function maximizeWindow(windowId) {
+            const window = document.getElementById(windowId);
+            if (window.style.width === '95vw' && window.style.height === '90vh') {
+                window.style.width = '';
+                window.style.height = '';
+                window.style.top = '';
+                window.style.left = '';
             } else {
-                console.error('Failed to load public pastes');
+                window.style.width = '95vw';
+                window.style.height = '90vh';
+                window.style.top = '2.5vh';
+                window.style.left = '2.5vw';
             }
-        } catch (error) {
-            console.error('Error loading public pastes:', error);
-            // Fallback com dados de exemplo
-            appState.publicPastes = [
-                {
-                    id: 'abc12345',
-                    title: 'Example Paste',
-                    syntax: 'python',
-                    created: new Date().toISOString(),
-                    content_preview: 'print("Hello World")'
+        }
+
+        function bringToFront(windowId) {
+            const windows = document.querySelectorAll('.window');
+            let maxZIndex = 100;
+            
+            windows.forEach(window => {
+                const zIndex = parseInt(window.style.zIndex) || 100;
+                if (zIndex > maxZIndex) maxZIndex = zIndex;
+            });
+            
+            document.getElementById(windowId).style.zIndex = maxZIndex + 1;
+        }
+
+        // Make windows draggable
+        document.addEventListener('DOMContentLoaded', function() {
+            const windows = document.querySelectorAll('.window');
+            
+            windows.forEach(window => {
+                const header = window.querySelector('.window-header');
+                let isDragging = false;
+                let currentX;
+                let currentY;
+                let initialX;
+                let initialY;
+                let xOffset = 0;
+                let yOffset = 0;
+
+                header.addEventListener('mousedown', dragStart);
+                header.addEventListener('mouseup', dragEnd);
+                header.addEventListener('mousemove', drag);
+                header.addEventListener('click', () => bringToFront(window.id));
+
+                function dragStart(e) {
+                    initialX = e.clientX - xOffset;
+                    initialY = e.clientY - yOffset;
+                    
+                    if (e.target === header || e.target.classList.contains('terminal-text')) {
+                        isDragging = true;
+                    }
                 }
-            ];
-            this.displaySearchResults(appState.publicPastes);
-        }
-    }
-    
-    displaySearchResults(pastes) {
-        const resultsContainer = document.getElementById('searchResults');
-        if (!resultsContainer) return;
-        
-        const query = document.getElementById('searchQuery')?.value.toLowerCase() || '';
-        const syntaxFilter = document.getElementById('searchSyntax')?.value || '';
-        
-        let filteredPastes = pastes.filter(paste => {
-            const matchesQuery = !query || 
-                paste.title.toLowerCase().includes(query) || 
-                (paste.content_preview && paste.content_preview.toLowerCase().includes(query));
-            
-            const matchesSyntax = !syntaxFilter || paste.syntax === syntaxFilter;
-            
-            return matchesQuery && matchesSyntax;
+
+                function dragEnd(e) {
+                    initialX = currentX;
+                    initialY = currentY;
+                    
+                    isDragging = false;
+                }
+
+                function drag(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        currentX = e.clientX - initialX;
+                        currentY = e.clientY - initialY;
+
+                        xOffset = currentX;
+                        yOffset = currentY;
+
+                        setTranslate(currentX, currentY, window);
+                    }
+                }
+
+                function setTranslate(xPos, yPos, el) {
+                    el.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+                }
+            });
         });
-        
-        if (filteredPastes.length === 0) {
-            resultsContainer.innerHTML = `
-                <div class="text-center terminal-text">
-                    <i class="fas fa-search fa-2x mb-3"></i>
-                    <p>No pastes found matching your criteria</p>
-                </div>
-            `;
-            return;
-        }
-        
-        resultsContainer.innerHTML = filteredPastes.map(paste => `
-            <div class="paste-item" onclick="viewPaste('${paste.id}')">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="neon-text mb-1">${this.escapeHtml(paste.title)}</h6>
-                        <small class="terminal-text">
-                            <i class="fas fa-code me-1"></i>${paste.syntax} • 
-                            <i class="fas fa-clock me-1"></i>${new Date(paste.created).toLocaleDateString()}
-                        </small>
-                    </div>
-                    <span class="badge bg-dark terminal-text">${paste.id}</span>
-                </div>
-                ${paste.content_preview ? `<p class="terminal-text mb-0 mt-2 small">${this.escapeHtml(paste.content_preview)}...</p>` : ''}
-            </div>
-        `).join('');
-    }
-    
-    escapeHtml(unsafe) {
-        if (!unsafe) return '';
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-}
 
-// Initialize window manager
-const windowManager = new WindowManager();
-
-// Set current year
-document.addEventListener('DOMContentLoaded', function() {
-    const yearElement = document.getElementById('currentYear');
-    if (yearElement) {
-        yearElement.textContent = new Date().getFullYear();
-    }
-});
-
-// Dock event listeners
-document.addEventListener('click', function(e) {
-    if (e.target.closest('.dock-item')) {
-        const dockItem = e.target.closest('.dock-item');
-        const windowId = dockItem.getAttribute('data-window');
-        if (windowId) {
-            windowManager.showWindow(windowId);
-        }
-    }
-    
-    if (e.target.classList.contains('window-control')) {
-        const windowId = e.target.getAttribute('data-window');
-        const action = e.target.classList.contains('minimize') ? 'minimize' : 
-                      e.target.classList.contains('close') ? 'close' : null;
-        
-        if (action && windowId) {
-            if (action === 'minimize') {
-                windowManager.minimize(windowId);
-            } else if (action === 'close') {
-                windowManager.close(windowId);
-            }
-        }
-    }
-});
-
-// View a specific paste
-async function viewPaste(pasteId) {
-    try {
-        const response = await fetch(`/api/paste/${pasteId}`);
-        if (!response.ok) {
-            throw new Error('Paste not found');
-        }
-        const paste = await response.json();
-        
-        if (paste.error) {
-            alert('Error: ' + paste.error);
-            return;
-        }
-        
-        appState.currentPaste = paste;
-        displayPaste(paste);
-        windowManager.showWindow('view');
-    } catch (error) {
-        console.error('Error loading paste:', error);
-        alert('Error loading paste: ' + error.message);
-    }
-}
-
-// Display paste in viewer
-function displayPaste(paste) {
-    const viewer = document.getElementById('pasteViewer');
-    if (!viewer) return;
-    
-    viewer.innerHTML = `
-        <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-start mb-3">
-                <div>
-                    <h4 class="neon-text">${windowManager.escapeHtml(paste.title)}</h4>
-                    <div class="terminal-text">
-                        <span class="badge bg-dark me-2">${paste.syntax}</span>
-                        <span class="badge bg-dark me-2">${paste.id}</span>
-                        ${paste.unlisted ? '<span class="badge bg-warning text-dark">UNLISTED</span>' : ''}
-                    </div>
-                </div>
-                <div class="terminal-text text-end">
-                    <small>Created: ${new Date(paste.created).toLocaleString()}</small><br>
-                    <small>Expires: ${paste.expires ? new Date(paste.expires).toLocaleString() : 'Never'}</small>
-                </div>
-            </div>
-        </div>
-        <div class="paste-content terminal-text">${windowManager.escapeHtml(paste.content)}</div>
-        <div class="mt-3">
-            <button class="btn glow-button me-2" onclick="copyToClipboard('${paste.id}')">
-                <i class="fas fa-copy me-1"></i>Copy Content
-            </button>
-            <button class="btn glow-button" onclick="copyPasteUrl('${paste.id}')">
-                <i class="fas fa-link me-1"></i>Copy URL
-            </button>
-        </div>
-    `;
-}
-
-// Utility functions
-async function copyToClipboard(pasteId) {
-    try {
-        const response = await fetch(`/api/paste/${pasteId}`);
-        if (response.ok) {
-            const content = await response.text();
-            await navigator.clipboard.writeText(content);
-            alert('Content copied to clipboard!');
-        } else {
-            throw new Error('Failed to fetch paste content');
-        }
-    } catch (error) {
-        console.error('Error copying to clipboard:', error);
-        alert('Error copying content: ' + error.message);
-    }
-}
-
-function copyPasteUrl(pasteId) {
-    const url = `${window.location.origin}/${pasteId}`;
-    navigator.clipboard.writeText(url).then(() => {
-        alert('URL copied to clipboard!');
-    }).catch(err => {
-        console.error('Error copying URL:', err);
-        alert('Error copying URL');
-    });
-}
-
-// Search functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const searchQuery = document.getElementById('searchQuery');
-    const searchSyntax = document.getElementById('searchSyntax');
-    
-    if (searchQuery) {
-        searchQuery.addEventListener('input', () => {
-            windowManager.displaySearchResults(appState.publicPastes);
-        });
-    }
-    
-    if (searchSyntax) {
-        searchSyntax.addEventListener('change', () => {
-            windowManager.displaySearchResults(appState.publicPastes);
-        });
-    }
-});
-
-// Form submission
-document.addEventListener('DOMContentLoaded', function() {
-    const pasteForm = document.getElementById('pasteForm');
-    if (pasteForm) {
-        pasteForm.addEventListener('submit', async function(e) {
+        // Paste form handling
+        document.getElementById('pasteForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const formData = {
-                title: document.getElementById('title')?.value || 'Untitled',
-                content: document.getElementById('content')?.value || '',
-                syntax: document.getElementById('syntax')?.value || 'text',
-                expires: document.getElementById('expires')?.value || '1day',
-                unlisted: document.getElementById('unlisted')?.checked || false
-            };
-            
-            if (!formData.content.trim()) {
-                alert('Content is required');
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const syntax = document.getElementById('syntax').value;
+            const expires = document.getElementById('expires').value;
+            const unlisted = document.getElementById('unlisted').checked;
+
+            fetch('/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: title,
+                    content: content,
+                    syntax: syntax,
+                    expires: expires,
+                    unlisted: unlisted
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`Paste created successfully!\nURL: ${data.url}\nPaste ID: ${data.paste_id}`);
+                    document.getElementById('pasteForm').reset();
+                    document.getElementById('title').value = 'Untitled';
+                    
+                    // Auto-open the created paste
+                    openPasteView(data.paste_id);
+                } else {
+                    alert('Error creating paste: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating paste');
+            });
+        });
+
+        // Load public pastes for search
+        function loadPublicPastes() {
+            fetch('/api/public-pastes')
+                .then(response => response.json())
+                .then(pastes => {
+                    const resultsDiv = document.getElementById('searchResults');
+                    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                    const syntaxFilter = document.getElementById('syntaxFilter').value;
+                    const sortOrder = document.getElementById('sortOrder').value;
+                    
+                    // Filter and sort pastes
+                    let filteredPastes = pastes.filter(paste => {
+                        const matchesSearch = paste.title.toLowerCase().includes(searchTerm) || 
+                                            paste.content_preview.toLowerCase().includes(searchTerm);
+                        const matchesSyntax = !syntaxFilter || paste.syntax === syntaxFilter;
+                        return matchesSearch && matchesSyntax;
+                    });
+                    
+                    if (sortOrder === 'newest') {
+                        filteredPastes.sort((a, b) => new Date(b.created) - new Date(a.created));
+                    } else {
+                        filteredPastes.sort((a, b) => new Date(a.created) - new Date(b.created));
+                    }
+                    
+                    // Display results
+                    if (filteredPastes.length === 0) {
+                        resultsDiv.innerHTML = '<p class="terminal-text">No pastes found.</p>';
+                        return;
+                    }
+                    
+                    resultsDiv.innerHTML = filteredPastes.map(paste => `
+                        <div class="search-result" onclick="openPasteView('${paste.id}')">
+                            <h6 class="terminal-text">${paste.title}</h6>
+                            <div class="d-flex gap-2 mb-2">
+                                <span class="badge syntax-badge">${paste.syntax}</span>
+                                <small class="terminal-text">${new Date(paste.created).toLocaleString()}</small>
+                            </div>
+                            <p class="terminal-text mb-0" style="color: #88ff88;">${paste.content_preview}...</p>
+                        </div>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error loading pastes:', error);
+                    document.getElementById('searchResults').innerHTML = '<p class="terminal-text">Error loading pastes.</p>';
+                });
+        }
+
+        // Load paste by ID
+        function loadPasteById() {
+            const pasteId = document.getElementById('pasteIdInput').value.trim();
+            if (!pasteId) {
+                alert('Please enter a Paste ID');
                 return;
             }
-            
-            try {
-                const submitBtn = document.querySelector('.glow-button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating...';
-                submitBtn.disabled = true;
-                
-                const response = await fetch('/create', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
+            openPasteView(pasteId);
+        }
+
+        // Open paste view
+        function openPasteView(pasteId) {
+            fetch(`/api/paste/${pasteId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Paste not found');
+                    }
+                    return response.text();
+                })
+                .then(content => {
+                    // For API endpoint, we only get content, so we need to get full paste data
+                    fetch(`/${pasteId}`)
+                        .then(response => response.text())
+                        .then(html => {
+                            // Extract paste data from the HTML response
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            const pasteDataScript = doc.querySelector('script[data-paste]');
+                            
+                            if (pasteDataScript) {
+                                const pasteData = JSON.parse(pasteDataScript.textContent);
+                                displayPaste(pasteData);
+                            } else {
+                                // Fallback: create basic paste data
+                                const pasteData = {
+                                    id: pasteId,
+                                    title: `Paste ${pasteId}`,
+                                    content: content,
+                                    syntax: 'text',
+                                    created: new Date().toISOString(),
+                                    expires: null
+                                };
+                                displayPaste(pasteData);
+                            }
+                        })
+                        .catch(() => {
+                            // Fallback if full data not available
+                            const pasteData = {
+                                id: pasteId,
+                                title: `Paste ${pasteId}`,
+                                content: content,
+                                syntax: 'text',
+                                created: new Date().toISOString(),
+                                expires: null
+                            };
+                            displayPaste(pasteData);
+                        });
+                })
+                .catch(error => {
+                    alert('Paste not found or expired: ' + error.message);
                 });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Paste Created!';
-                    setTimeout(() => {
-                        window.location.href = `/${result.paste_id}`;
-                    }, 1000);
-                } else {
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                    alert('Error: ' + (result.error || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                const submitBtn = document.querySelector('.glow-button[type="submit"]');
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Create Paste';
-                submitBtn.disabled = false;
-                alert('Error creating paste: ' + error.message);
+        }
+
+        // Display paste in view window
+        function displayPaste(pasteData) {
+            document.getElementById('currentPasteTitle').textContent = pasteData.title;
+            document.getElementById('currentPasteSyntax').textContent = pasteData.syntax;
+            document.getElementById('currentPasteCreated').textContent = 'Created: ' + new Date(pasteData.created).toLocaleString();
+            
+            if (pasteData.expires) {
+                document.getElementById('currentPasteExpires').textContent = 'Expires: ' + new Date(pasteData.expires).toLocaleString();
+            } else {
+                document.getElementById('currentPasteExpires').textContent = 'Never expires';
+            }
+            
+            document.getElementById('currentPasteContent').textContent = pasteData.content;
+            openWindow('currentPasteWindow');
+        }
+
+        // Utility functions
+        function copyPasteContent() {
+            const content = document.getElementById('currentPasteContent').textContent;
+            navigator.clipboard.writeText(content).then(() => {
+                alert('Content copied to clipboard!');
+            });
+        }
+
+        function sharePaste() {
+            const pasteId = document.querySelector('#currentPasteWindow [data-paste-id]')?.dataset.pasteId || 
+                           window.location.pathname.split('/').pop();
+            const url = `${window.location.origin}/${pasteId}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URL copied to clipboard!');
+            });
+        }
+
+        // Auto-open paste if paste_data is available
+        {% if paste_data %}
+        document.addEventListener('DOMContentLoaded', function() {
+            const pasteData = {{ paste_data | tojson }};
+            displayPaste(pasteData);
+            openWindow('currentPasteWindow');
+        });
+        {% endif %}
+
+        // Initialize search on window open
+        document.getElementById('searchWindow').addEventListener('click', function() {
+            bringToFront('searchWindow');
+        });
+
+        document.getElementById('searchWindow').addEventListener('mouseenter', function() {
+            if (this.style.display !== 'none') {
+                loadPublicPastes();
             }
         });
-    }
-});
-
-// Animated stats
-function animateCounter(element, target) {
-    if (!element) return;
-    
-    let current = 0;
-    const increment = target / 50;
-    const timer = setInterval(() => {
-        current += increment;
-        if (current >= target) {
-            element.textContent = Math.floor(target).toLocaleString();
-            clearInterval(timer);
-        } else {
-            element.textContent = Math.floor(current).toLocaleString();
-        }
-    }, 50);
-}
-
-// Initialize stats animation
-document.addEventListener('DOMContentLoaded', function() {
-    setTimeout(() => {
-        const pastesCount = document.getElementById('pastesCount');
-        const todayCount = document.getElementById('todayCount');
-        const unlistedCount = document.getElementById('unlistedCount');
-        
-        if (pastesCount) animateCounter(pastesCount, 14257);
-        if (todayCount) animateCounter(todayCount, 324);
-        if (unlistedCount) animateCounter(unlistedCount, 1893);
-    }, 1000);
-});
-
-// Terminal typing effect
-let titleIndex = 0;
-let charIndex = 0;
-let typingTimer;
-
-function typeWriter() {
-    const subtitle = document.getElementById('typing-subtitle');
-    if (!subtitle) return;
-    
-    const titles = [
-        "SECURE CODE SHARING",
-        "ENCRYPTED PASTES", 
-        "EPHEMERAL CONTENT",
-        "DEEP WEB STYLE"
-    ];
-    
-    if (charIndex < titles[titleIndex].length) {
-        subtitle.innerHTML = 
-            '<i class="fas fa-shield-alt me-2"></i>' +
-            titles[titleIndex].substring(0, charIndex + 1) + 
-            ' • ENCRYPTED • EPHEMERAL';
-        charIndex++;
-        typingTimer = setTimeout(typeWriter, 100);
-    } else {
-        typingTimer = setTimeout(() => {
-            charIndex = 0;
-            titleIndex = (titleIndex + 1) % titles.length;
-            typeWriter();
-        }, 2000);
-    }
-}
-
-// Start typing effect when page loads
-document.addEventListener('DOMContentLoaded', function() {
-    typeWriter();
-});
-
-// Cleanup on page unload
-window.addEventListener('beforeunload', function() {
-    if (typingTimer) {
-        clearTimeout(typingTimer);
-    }
-});
-
-// Check if we're viewing a specific paste from URL
-document.addEventListener('DOMContentLoaded', function() {
-    const pathParts = window.location.pathname.split('/').filter(p => p);
-    if (pathParts.length === 1 && pathParts[0] !== '') {
-        const pasteId = pathParts[0];
-        // Small delay to ensure everything is loaded
-        setTimeout(() => {
-            viewPaste(pasteId);
-        }, 500);
-    }
-});
     </script>
+
+    {% if paste_data %}
+    <script type="application/json" data-paste>
+        {{ paste_data | tojson }}
+    </script>
+    {% endif %}
 </body>
 </html>
