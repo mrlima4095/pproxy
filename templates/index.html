@@ -569,244 +569,306 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Application State
-        let appState = {
-            currentWindow: 'create',
-            publicPastes: [],
-            currentPaste: null
-        };
+let appState = {
+    currentWindow: 'create',
+    publicPastes: [],
+    currentPaste: null
+};
 
-        // Window management system
-        class WindowManager {
-            constructor() {
-                this.minimizedWindows = [];
-            }
-            
-            showWindow(windowId) {
-                // Hide all windows
-                document.querySelectorAll('.window').forEach(window => {
-                    window.classList.add('hidden');
-                });
-                
-                // Show selected window
-                const window = document.getElementById(`${windowId}-window`);
-                if (window) {
-                    window.classList.remove('hidden');
-                    window.classList.remove('minimized');
-                }
-                
-                // Update dock active state
-                document.querySelectorAll('.dock-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                document.querySelector(`.dock-item[data-window="${windowId}"]`).classList.add('active');
-                
-                appState.currentWindow = windowId;
-                
-                // Load data if needed
-                if (windowId === 'search') {
-                    this.loadPublicPastes();
-                }
-            }
-            
-            minimize(windowId) {
-                const window = document.getElementById(`${windowId}-window`);
-                if (window) {
-                    window.classList.add('minimized');
-                }
-            }
-            
-            close(windowId) {
-                const window = document.getElementById(`${windowId}-window`);
-                if (window) {
-                    window.classList.add('hidden');
-                }
-            }
-        }
-
-        // Initialize window manager
-        const windowManager = new WindowManager();
-
-        // Set current year
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
-        
-        // Dock event listeners
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.dock-item')) {
-                const dockItem = e.target.closest('.dock-item');
-                const windowId = dockItem.getAttribute('data-window');
-                windowManager.showWindow(windowId);
-            }
-            
-            if (e.target.classList.contains('window-control')) {
-                const windowId = e.target.getAttribute('data-window');
-                const action = e.target.classList.contains('minimize') ? 'minimize' : 
-                              e.target.classList.contains('close') ? 'close' : null;
-                
-                if (action && windowId) {
-                    if (action === 'minimize') {
-                        windowManager.minimize(windowId);
-                    } else if (action === 'close') {
-                        windowManager.close(windowId);
-                    }
-                }
-            }
+// Window management system
+class WindowManager {
+    constructor() {
+        this.minimizedWindows = [];
+    }
+    
+    showWindow(windowId) {
+        // Hide all windows
+        document.querySelectorAll('.window').forEach(window => {
+            window.classList.add('hidden');
         });
-
-        // Load public pastes for search
-        async function loadPublicPastes() {
-            try {
-                const response = await fetch('/api/public-pastes');
+        
+        // Show selected window
+        const window = document.getElementById(`${windowId}-window`);
+        if (window) {
+            window.classList.remove('hidden');
+            window.classList.remove('minimized');
+        }
+        
+        // Update dock active state
+        document.querySelectorAll('.dock-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        const activeDockItem = document.querySelector(`.dock-item[data-window="${windowId}"]`);
+        if (activeDockItem) {
+            activeDockItem.classList.add('active');
+        }
+        
+        appState.currentWindow = windowId;
+        
+        // Load data if needed
+        if (windowId === 'search') {
+            this.loadPublicPastes();
+        }
+    }
+    
+    minimize(windowId) {
+        const window = document.getElementById(`${windowId}-window`);
+        if (window) {
+            window.classList.add('minimized');
+        }
+    }
+    
+    close(windowId) {
+        const window = document.getElementById(`${windowId}-window`);
+        if (window) {
+            window.classList.add('hidden');
+        }
+    }
+    
+    async loadPublicPastes() {
+        try {
+            const response = await fetch('/api/public-pastes');
+            if (response.ok) {
                 appState.publicPastes = await response.json();
-                displaySearchResults(appState.publicPastes);
-            } catch (error) {
-                console.error('Error loading public pastes:', error);
+                this.displaySearchResults(appState.publicPastes);
+            } else {
+                console.error('Failed to load public pastes');
             }
-        }
-
-        // Display search results
-        function displaySearchResults(pastes) {
-            const resultsContainer = document.getElementById('searchResults');
-            const query = document.getElementById('searchQuery').value.toLowerCase();
-            const syntaxFilter = document.getElementById('searchSyntax').value;
-            
-            let filteredPastes = pastes.filter(paste => {
-                const matchesQuery = !query || 
-                    paste.title.toLowerCase().includes(query) || 
-                    paste.content_preview.toLowerCase().includes(query);
-                
-                const matchesSyntax = !syntaxFilter || paste.syntax === syntaxFilter;
-                
-                return matchesQuery && matchesSyntax;
-            });
-            
-            if (filteredPastes.length === 0) {
-                resultsContainer.innerHTML = `
-                    <div class="text-center terminal-text">
-                        <i class="fas fa-search fa-2x mb-3"></i>
-                        <p>No pastes found matching your criteria</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            resultsContainer.innerHTML = filteredPastes.map(paste => `
-                <div class="paste-item" onclick="viewPaste('${paste.id}')">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="neon-text mb-1">${escapeHtml(paste.title)}</h6>
-                            <small class="terminal-text">
-                                <i class="fas fa-code me-1"></i>${paste.syntax} • 
-                                <i class="fas fa-clock me-1"></i>${new Date(paste.created).toLocaleDateString()}
-                            </small>
-                        </div>
-                        <span class="badge bg-dark terminal-text">${paste.id}</span>
-                    </div>
-                    <p class="terminal-text mb-0 mt-2 small">${escapeHtml(paste.content_preview)}...</p>
-                </div>
-            `).join('');
-        }
-
-        // View a specific paste
-        async function viewPaste(pasteId) {
-            try {
-                const response = await fetch(`/${pasteId}`);
-                const paste = await response.json();
-                
-                if (paste.error) {
-                    alert('Error: ' + paste.error);
-                    return;
+        } catch (error) {
+            console.error('Error loading public pastes:', error);
+            // Fallback com dados de exemplo
+            appState.publicPastes = [
+                {
+                    id: 'abc12345',
+                    title: 'Example Paste',
+                    syntax: 'python',
+                    created: new Date().toISOString(),
+                    content_preview: 'print("Hello World")'
                 }
-                
-                appState.currentPaste = paste;
-                displayPaste(paste);
-                windowManager.showWindow('view');
-            } catch (error) {
-                console.error('Error loading paste:', error);
-                alert('Error loading paste');
-            }
+            ];
+            this.displaySearchResults(appState.publicPastes);
         }
-
-        // Display paste in viewer
-        function displayPaste(paste) {
-            const viewer = document.getElementById('pasteViewer');
-            viewer.innerHTML = `
-                <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h4 class="neon-text">${escapeHtml(paste.title)}</h4>
-                            <div class="terminal-text">
-                                <span class="badge bg-dark me-2">${paste.syntax}</span>
-                                <span class="badge bg-dark me-2">${paste.id}</span>
-                                ${paste.unlisted ? '<span class="badge bg-warning text-dark">UNLISTED</span>' : ''}
-                            </div>
-                        </div>
-                        <div class="terminal-text text-end">
-                            <small>Created: ${new Date(paste.created).toLocaleString()}</small><br>
-                            <small>Expires: ${paste.expires ? new Date(paste.expires).toLocaleString() : 'Never'}</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="paste-content terminal-text">${escapeHtml(paste.content)}</div>
-                <div class="mt-3">
-                    <button class="btn glow-button me-2" onclick="copyToClipboard('${paste.id}')">
-                        <i class="fas fa-copy me-1"></i>Copy Content
-                    </button>
-                    <button class="btn glow-button" onclick="copyPasteUrl('${paste.id}')">
-                        <i class="fas fa-link me-1"></i>Copy URL
-                    </button>
+    }
+    
+    displaySearchResults(pastes) {
+        const resultsContainer = document.getElementById('searchResults');
+        if (!resultsContainer) return;
+        
+        const query = document.getElementById('searchQuery')?.value.toLowerCase() || '';
+        const syntaxFilter = document.getElementById('searchSyntax')?.value || '';
+        
+        let filteredPastes = pastes.filter(paste => {
+            const matchesQuery = !query || 
+                paste.title.toLowerCase().includes(query) || 
+                (paste.content_preview && paste.content_preview.toLowerCase().includes(query));
+            
+            const matchesSyntax = !syntaxFilter || paste.syntax === syntaxFilter;
+            
+            return matchesQuery && matchesSyntax;
+        });
+        
+        if (filteredPastes.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="text-center terminal-text">
+                    <i class="fas fa-search fa-2x mb-3"></i>
+                    <p>No pastes found matching your criteria</p>
                 </div>
             `;
+            return;
         }
+        
+        resultsContainer.innerHTML = filteredPastes.map(paste => `
+            <div class="paste-item" onclick="viewPaste('${paste.id}')">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="neon-text mb-1">${this.escapeHtml(paste.title)}</h6>
+                        <small class="terminal-text">
+                            <i class="fas fa-code me-1"></i>${paste.syntax} • 
+                            <i class="fas fa-clock me-1"></i>${new Date(paste.created).toLocaleDateString()}
+                        </small>
+                    </div>
+                    <span class="badge bg-dark terminal-text">${paste.id}</span>
+                </div>
+                ${paste.content_preview ? `<p class="terminal-text mb-0 mt-2 small">${this.escapeHtml(paste.content_preview)}...</p>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+}
 
-        // Utility functions
-        function escapeHtml(unsafe) {
-            return unsafe
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+// Initialize window manager
+const windowManager = new WindowManager();
+
+// Set current year
+document.addEventListener('DOMContentLoaded', function() {
+    const yearElement = document.getElementById('currentYear');
+    if (yearElement) {
+        yearElement.textContent = new Date().getFullYear();
+    }
+});
+
+// Dock event listeners
+document.addEventListener('click', function(e) {
+    if (e.target.closest('.dock-item')) {
+        const dockItem = e.target.closest('.dock-item');
+        const windowId = dockItem.getAttribute('data-window');
+        if (windowId) {
+            windowManager.showWindow(windowId);
         }
-
-        async function copyToClipboard(pasteId) {
-            try {
-                const response = await fetch(`/api/paste/${pasteId}`);
-                const content = await response.text();
-                await navigator.clipboard.writeText(content);
-                alert('Content copied to clipboard!');
-            } catch (error) {
-                console.error('Error copying to clipboard:', error);
+    }
+    
+    if (e.target.classList.contains('window-control')) {
+        const windowId = e.target.getAttribute('data-window');
+        const action = e.target.classList.contains('minimize') ? 'minimize' : 
+                      e.target.classList.contains('close') ? 'close' : null;
+        
+        if (action && windowId) {
+            if (action === 'minimize') {
+                windowManager.minimize(windowId);
+            } else if (action === 'close') {
+                windowManager.close(windowId);
             }
         }
+    }
+});
 
-        function copyPasteUrl(pasteId) {
-            const url = `${window.location.origin}/${pasteId}`;
-            navigator.clipboard.writeText(url);
-            alert('URL copied to clipboard!');
+// View a specific paste
+async function viewPaste(pasteId) {
+    try {
+        const response = await fetch(`/${pasteId}`);
+        if (!response.ok) {
+            throw new Error('Paste not found');
         }
+        const paste = await response.json();
+        
+        if (paste.error) {
+            alert('Error: ' + paste.error);
+            return;
+        }
+        
+        appState.currentPaste = paste;
+        displayPaste(paste);
+        windowManager.showWindow('view');
+    } catch (error) {
+        console.error('Error loading paste:', error);
+        alert('Error loading paste: ' + error.message);
+    }
+}
 
-        // Search functionality
-        document.getElementById('searchQuery').addEventListener('input', () => {
-            displaySearchResults(appState.publicPastes);
+// Display paste in viewer
+function displayPaste(paste) {
+    const viewer = document.getElementById('pasteViewer');
+    if (!viewer) return;
+    
+    viewer.innerHTML = `
+        <div class="mb-4">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <h4 class="neon-text">${windowManager.escapeHtml(paste.title)}</h4>
+                    <div class="terminal-text">
+                        <span class="badge bg-dark me-2">${paste.syntax}</span>
+                        <span class="badge bg-dark me-2">${paste.id}</span>
+                        ${paste.unlisted ? '<span class="badge bg-warning text-dark">UNLISTED</span>' : ''}
+                    </div>
+                </div>
+                <div class="terminal-text text-end">
+                    <small>Created: ${new Date(paste.created).toLocaleString()}</small><br>
+                    <small>Expires: ${paste.expires ? new Date(paste.expires).toLocaleString() : 'Never'}</small>
+                </div>
+            </div>
+        </div>
+        <div class="paste-content terminal-text">${windowManager.escapeHtml(paste.content)}</div>
+        <div class="mt-3">
+            <button class="btn glow-button me-2" onclick="copyToClipboard('${paste.id}')">
+                <i class="fas fa-copy me-1"></i>Copy Content
+            </button>
+            <button class="btn glow-button" onclick="copyPasteUrl('${paste.id}')">
+                <i class="fas fa-link me-1"></i>Copy URL
+            </button>
+        </div>
+    `;
+}
+
+// Utility functions
+async function copyToClipboard(pasteId) {
+    try {
+        const response = await fetch(`/api/paste/${pasteId}`);
+        if (response.ok) {
+            const content = await response.text();
+            await navigator.clipboard.writeText(content);
+            alert('Content copied to clipboard!');
+        } else {
+            throw new Error('Failed to fetch paste content');
+        }
+    } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        alert('Error copying content: ' + error.message);
+    }
+}
+
+function copyPasteUrl(pasteId) {
+    const url = `${window.location.origin}/${pasteId}`;
+    navigator.clipboard.writeText(url).then(() => {
+        alert('URL copied to clipboard!');
+    }).catch(err => {
+        console.error('Error copying URL:', err);
+        alert('Error copying URL');
+    });
+}
+
+// Search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchQuery = document.getElementById('searchQuery');
+    const searchSyntax = document.getElementById('searchSyntax');
+    
+    if (searchQuery) {
+        searchQuery.addEventListener('input', () => {
+            windowManager.displaySearchResults(appState.publicPastes);
         });
-
-        document.getElementById('searchSyntax').addEventListener('change', () => {
-            displaySearchResults(appState.publicPastes);
+    }
+    
+    if (searchSyntax) {
+        searchSyntax.addEventListener('change', () => {
+            windowManager.displaySearchResults(appState.publicPastes);
         });
+    }
+});
 
-        // Form submission
-        document.getElementById('pasteForm').addEventListener('submit', async function(e) {
+// Form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const pasteForm = document.getElementById('pasteForm');
+    if (pasteForm) {
+        pasteForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const formData = {
-                title: document.getElementById('title').value,
-                content: document.getElementById('content').value,
-                syntax: document.getElementById('syntax').value,
-                expires: document.getElementById('expires').value,
-                unlisted: document.getElementById('unlisted').checked
+                title: document.getElementById('title')?.value || 'Untitled',
+                content: document.getElementById('content')?.value || '',
+                syntax: document.getElementById('syntax')?.value || 'text',
+                expires: document.getElementById('expires')?.value || '1day',
+                unlisted: document.getElementById('unlisted')?.checked || false
             };
             
+            if (!formData.content.trim()) {
+                alert('Content is required');
+                return;
+            }
+            
             try {
+                const submitBtn = document.querySelector('.glow-button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating...';
+                submitBtn.disabled = true;
+                
                 const response = await fetch('/create', {
                     method: 'POST',
                     headers: {
@@ -818,82 +880,111 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    const submitBtn = document.querySelector('.glow-button[type="submit"]');
-                    const originalText = submitBtn.innerHTML;
                     submitBtn.innerHTML = '<i class="fas fa-check me-1"></i> Paste Created!';
-                    
                     setTimeout(() => {
                         window.location.href = `/${result.paste_id}`;
                     }, 1000);
                 } else {
-                    alert('Error: ' + result.error);
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    alert('Error: ' + (result.error || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error creating paste');
+                const submitBtn = document.querySelector('.glow-button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Create Paste';
+                submitBtn.disabled = false;
+                alert('Error creating paste: ' + error.message);
             }
         });
+    }
+});
 
-        // Animated stats
-        function animateCounter(element, target) {
-            let current = 0;
-            const increment = target / 50;
-            const timer = setInterval(() => {
-                current += increment;
-                if (current >= target) {
-                    element.textContent = Math.floor(target).toLocaleString();
-                    clearInterval(timer);
-                } else {
-                    element.textContent = Math.floor(current).toLocaleString();
-                }
-            }, 50);
+// Animated stats
+function animateCounter(element, target) {
+    if (!element) return;
+    
+    let current = 0;
+    const increment = target / 50;
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            element.textContent = Math.floor(target).toLocaleString();
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(current).toLocaleString();
         }
+    }, 50);
+}
+
+// Initialize stats animation
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        const pastesCount = document.getElementById('pastesCount');
+        const todayCount = document.getElementById('todayCount');
+        const unlistedCount = document.getElementById('unlistedCount');
         
-        // Simulate stats
+        if (pastesCount) animateCounter(pastesCount, 14257);
+        if (todayCount) animateCounter(todayCount, 324);
+        if (unlistedCount) animateCounter(unlistedCount, 1893);
+    }, 1000);
+});
+
+// Terminal typing effect
+let titleIndex = 0;
+let charIndex = 0;
+let typingTimer;
+
+function typeWriter() {
+    const subtitle = document.getElementById('typing-subtitle');
+    if (!subtitle) return;
+    
+    const titles = [
+        "SECURE CODE SHARING",
+        "ENCRYPTED PASTES", 
+        "EPHEMERAL CONTENT",
+        "DEEP WEB STYLE"
+    ];
+    
+    if (charIndex < titles[titleIndex].length) {
+        subtitle.innerHTML = 
+            '<i class="fas fa-shield-alt me-2"></i>' +
+            titles[titleIndex].substring(0, charIndex + 1) + 
+            ' • ENCRYPTED • EPHEMERAL';
+        charIndex++;
+        typingTimer = setTimeout(typeWriter, 100);
+    } else {
+        typingTimer = setTimeout(() => {
+            charIndex = 0;
+            titleIndex = (titleIndex + 1) % titles.length;
+            typeWriter();
+        }, 2000);
+    }
+}
+
+// Start typing effect when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    typeWriter();
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (typingTimer) {
+        clearTimeout(typingTimer);
+    }
+});
+
+// Check if we're viewing a specific paste from URL
+document.addEventListener('DOMContentLoaded', function() {
+    const pathParts = window.location.pathname.split('/').filter(p => p);
+    if (pathParts.length === 1 && pathParts[0] !== '') {
+        const pasteId = pathParts[0];
+        // Small delay to ensure everything is loaded
         setTimeout(() => {
-            animateCounter(document.getElementById('pastesCount'), 14257);
-            animateCounter(document.getElementById('todayCount'), 324);
-            animateCounter(document.getElementById('unlistedCount'), 1893);
-        }, 1000);
-
-        // Terminal typing effect
-        const titles = [
-            "SECURE CODE SHARING",
-            "ENCRYPTED PASTES", 
-            "EPHEMERAL CONTENT",
-            "DEEP WEB STYLE"
-        ];
-        
-        let titleIndex = 0;
-        let charIndex = 0;
-        const subtitle = document.getElementById('typing-subtitle');
-        
-        function typeWriter() {
-            if (charIndex < titles[titleIndex].length) {
-                subtitle.innerHTML = 
-                    '<i class="fas fa-shield-alt me-2"></i>' +
-                    titles[titleIndex].substring(0, charIndex + 1) + 
-                    ' • ENCRYPTED • EPHEMERAL';
-                charIndex++;
-                setTimeout(typeWriter, 100);
-            } else {
-                setTimeout(() => {
-                    charIndex = 0;
-                    titleIndex = (titleIndex + 1) % titles.length;
-                    typeWriter();
-                }, 2000);
-            }
-        }
-        
-        // Start typing effect
-        typeWriter();
-
-        // Check if we're viewing a specific paste from URL
-        const pathParts = window.location.pathname.split('/').filter(p => p);
-        if (pathParts.length === 1 && pathParts[0] !== '') {
-            const pasteId = pathParts[0];
             viewPaste(pasteId);
-        }
+        }, 500);
+    }
+});
     </script>
 </body>
 </html>
