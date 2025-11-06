@@ -196,7 +196,7 @@ def is_paste_expired(expires_datetime):
 # |
 # | (Create Paste)
 def create_paste(title, content, syntax, expires, unlisted=False):
-    paste_id = str(uuid.uuid4())[:16] if unlisted else str(uuid.uuid4())[:8]
+    paste_id = str(uuid.uuid4())[:8] #str(uuid.uuid4())[:16] if unlisted else str(uuid.uuid4())[:8]
     expires_dt = calculate_expiration(expires)
     
     conn = sqlite3.connect(DATABASE)
