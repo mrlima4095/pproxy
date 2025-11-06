@@ -344,7 +344,7 @@ def start_socket_server(host='0.0.0.0', port=31523):
     print(f"[+] DeepBin listening on {host}:{port}")
     
     while True:
-        client_socket, addr = server_socket.accept()
+        client_socket, addr = server.accept()
         print(f"Socket connection from {addr}")
         client_thread = threading.Thread(target=handle_client_connection, args=(client_socket,), daemon=True).start()
 
