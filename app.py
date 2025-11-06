@@ -266,7 +266,7 @@ def view_paste(paste_id):
 @app.route('/api/paste/<paste_id>')
 def api_paste_raw(paste_id):
     password = request.args.get('password')
-    paste = get_paste(paste_id, password)
+    paste = get_paste(paste_id)
     
     if not paste: return 'Paste not found or expired', 404
     
