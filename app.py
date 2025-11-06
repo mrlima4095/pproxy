@@ -166,7 +166,7 @@ def disconnect():
 # (Database)
 # | (Initalize SQLite table)
 def init_db():
-    conn = sqlite3.connect(DABASE)
+    conn = sqlite3.connect(DATABASE)
     cursor = conn.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS pastes (id TEXT PRIMARY KEY, title TEXT NOT NULL, content TEXT NOT NULL, syntax TEXT, expires DATETIME, unlisted BOOLEAN DEFAULT FALSE, created DATETIME DEFAULT CURRENT_TIMESTAMP)")
     conn.commit()
