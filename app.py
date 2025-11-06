@@ -256,12 +256,12 @@ def create_paste_route():
 # | (View Paste on Web)
 @app.route('/<paste_id>')
 def view_paste(paste_id):
-    password = request.args.get('password')
     paste = get_paste(paste_id)
     
-    if not paste: return jsonify({'error': 'Paste not found or expired'}), 404
-    
-    return jsonify(paste)
+    if not paste: 
+        return jsonify({'error': 'Paste not found or expired'}), 404
+
+    return render_template('index.html', paste_data=paste)
 # | (Read Paste)
 @app.route('/api/paste/<paste_id>')
 def api_paste_raw(paste_id):
@@ -271,6 +271,35 @@ def api_paste_raw(paste_id):
     if not paste: return 'Paste not found or expired', 404
     
     return paste['content']
+# | (Get Public Pastes)
+@app.route('/api/public-pastes')
+def get_public_pastes():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, title, syntax, created, content
+        FROM pastes 
+        WHERE unlisted = FALSE 
+        AND (expires IS NULL OR expires > datetime('now'))
+        ORDER BY created DESC 
+        LIMIT 200
+    ''')
+    
+    pastes = cursor.fetchall()
+    conn.close()
+    
+    results = []
+    for paste in pastes:
+        results.append({
+            'id': paste[0],
+            'title': paste[1],
+            'syntax': paste[2],
+            'created': paste[3],
+            'content_preview': paste[4][:100]
+        })
+    
+    return jsonify(results)
 # |
 # (Socket)
 def handle_client_connection(client_socket):
