@@ -13,11 +13,6 @@ app = Flask(__name__)
 app.secret_key = 'segredo_super_seguro'
 CORS(app)
 
-DATABASE = 'app.db'
-JSON_FILE = "/var/www/opentty/assets/root/web.json"
-EXPIRATION_TIMES = { '5min': 5, '10min': 10, '1hour': 60, '1day': 1440, '1week': 10080, '2week': 20160, '1month': 43200, '6months': 259200, '1year': 525600 }
-
-
 connections = {}
 
 def handle_client(conn, addr):
@@ -193,18 +188,6 @@ def post():
     print("=" * 40)
 
     return f"POST received with sucess!\nContent: {body}\n", 200, {"Content-Type": "text/plain; charset=utf-8"}
-
-# OpenTTY WebSite API
-# | (Get Latest Versions)
-@app.route("/api/versions")
-def get_versions(): return jsonify(load_versions())
-# | (Get Download URL)
-@app.route("/api/versions/downloads")
-def get_downloads(): return jsonify(load_versions().get("downloads", []))
-# | (Get News of Developers)
-@app.route("/api/versions/news")
-def get_news(): return jsonify(load_versions().get("news", []))
-
 
 if __name__ == '__main__':
     threading.Thread(target=start_tcp_server, daemon=True).start()
