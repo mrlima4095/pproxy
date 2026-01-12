@@ -58,12 +58,6 @@ def start_tcp_server(host='0.0.0.0', port=4096):
         conn, addr = server.accept()
         threading.Thread(target=handle_client, args=(conn, addr), daemon=True).start()
 
-def load_versions():
-    if os.path.exists(JSON_FILE):
-        with open(JSON_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    return {"downloads": [], "news": []}
-
 # WebProxy
 # | 
 @app.route('/cli/')
