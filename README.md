@@ -89,16 +89,16 @@ The system allows remote clients to connect to the server through **TCP**, while
 ## 💻 Using with OpenTTY
 
 You can use this to access your control your OpenTTY in dumbphones with only support for GPRS _no local WI-FI support_.
-**Note:** It requires OpenTTY 1.16.1 or newer with **Lua**
+**Note:** It requires OpenTTY 1.17 or newer with **Lua**
 
 1. Download `proxy.lua` script:
 
     * Package **WebProxy** at _Yang Package Manager_
-    * With wget `execute install nano; wget opentty.xyz/assets/lib/proxy.lua; install proxy.lua; get; echo OK!; true`
+    * With curl `curl -o shprxy opentty.xyz/apps/net/proxy.lua`
 
 2. Run Lua Script:
 
-    * `bg lua proxy.lua [password]`
+    * `shprxy [password]`
     * It prints `WebProxy ID: [id]` use **id** and password to connect in [WebPanel](http://opentty.xyz/cli/)
 
 ---
@@ -111,7 +111,7 @@ Clone the repository and run the Flask + TCP server:
 git clone http://github.com/mrlima4095/pproxy.git
 cd pproxy
 
-pip install flask flask-cors
+pip install -r requirements.txt
 
 python app.py
 ```
