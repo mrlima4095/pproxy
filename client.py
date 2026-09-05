@@ -31,7 +31,7 @@ def receive_loop(sock, conn_id):
         sock.close()
 
 def main():
-    host = 'opentty.xyz'
+    host = 'opentty.fun'
     port = 4096
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

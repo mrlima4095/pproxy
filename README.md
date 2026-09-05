@@ -8,21 +8,21 @@ The system allows remote clients to connect to the server through **TCP**, while
 ## 🌐 Address
 
 * **Web Panel:**
-  [`http://opentty.xyz/cli/`](http://opentty.xyz/cli/)
+  [`http://opentty.fun/cli/`](http://opentty.fun/cli/)
 
 * **TCP Bind Server:**
-  `opentty.xyz:4096`
+  `opentty.fun:4096`
 
 ---
 
 ## 🚀 How it Works
 
-1. A **TCP client** connects to the server at `opentty.xyz:4096`.
+1. A **TCP client** connects to the server at `opentty.fun:4096`.
 
    * It provides a password upon connection.
    * It receives back a **unique session ID** (`conn_id`).
 
-2. The operator accesses `http://opentty.xyz/cli/` in the browser.
+2. The operator accesses `http://opentty.fun/cli/` in the browser.
 
    * Enters the `conn_id` and the corresponding password.
    * If approved, an **interactive web terminal** opens.
@@ -94,12 +94,12 @@ You can use this to access your control your OpenTTY in dumbphones with only sup
 1. Download `proxy.lua` script:
 
     * Package **WebProxy** at _Yang Package Manager_
-    * With curl `curl -o shprxy opentty.xyz/apps/net/proxy.lua`
+    * With curl `curl -o shprxy opentty.fun/apps/net/proxy.lua`
 
 2. Run Lua Script:
 
     * `shprxy [password]`
-    * It prints `WebProxy ID: [id]` use **id** and password to connect in [WebPanel](http://opentty.xyz/cli/)
+    * It prints `WebProxy ID: [id]` use **id** and password to connect in [WebPanel](http://opentty.fun/cli/)
 
 ---
 
